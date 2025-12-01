@@ -49,7 +49,30 @@ const CONFIG = {
     MAX_MESSAGE_LENGTH: 2000, 
     SPAM_MESSAGE_COUNT: 5, 
     SPAM_TIME_WINDOW: 10 * 1000, 
-    MUTE_DURATION: 30 * 60 * 1000 
+    MUTE_DURATION: 30 * 60 * 1000,
+    
+    // AIモード設定
+    AI_MODE: process.env.AI_MODE || 'free', // 'free' or 'full'
+    
+    // 信用スコア設定
+    TRUST_SCORE_MIN: 0,
+    TRUST_SCORE_MAX: 100,
+    TRUST_SCORE_DEFAULT: 50,
+    
+    // AI確認フロー設定
+    AI_CONFIRMATION_ENABLED: process.env.AI_MODE === 'full',
+    
+    // ソフト警告設定
+    SOFT_WARNING_ENABLED: process.env.AI_MODE === 'full',
+    
+    // 荒らし検知設定
+    TROLL_PATTERN_DETECTION_ENABLED: process.env.AI_MODE === 'full',
+    
+    // AIチケット応答設定
+    AI_TICKET_RESPONSE_ENABLED: process.env.AI_MODE === 'full',
+    
+    // 危険ワード自動学習設定
+    AUTO_WORD_LEARNING_ENABLED: process.env.AI_MODE === 'full'
 };
 
 module.exports = CONFIG;

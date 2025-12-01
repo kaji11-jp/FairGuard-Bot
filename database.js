@@ -26,6 +26,32 @@ db.exec(`
         user_id TEXT, channel_id TEXT, timestamp INTEGER, message_length INTEGER,
         PRIMARY KEY (user_id, channel_id, timestamp)
     );
+    CREATE TABLE IF NOT EXISTS user_trust_scores (
+        user_id TEXT PRIMARY KEY, score INTEGER DEFAULT 50, 
+        last_updated INTEGER, warning_count INTEGER DEFAULT 0,
+        spam_tendency REAL DEFAULT 0, join_date INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS ai_confirmations (
+        id TEXT PRIMARY KEY, message_id TEXT, user_id TEXT, 
+        moderator_id TEXT, status TEXT, timestamp INTEGER,
+        ai_analysis TEXT, context_data TEXT
+    );
+    CREATE TABLE IF NOT EXISTS soft_warnings (
+        id TEXT PRIMARY KEY, user_id TEXT, message_id TEXT,
+        timestamp INTEGER, tone_score REAL, suggestion TEXT
+    );
+    CREATE TABLE IF NOT EXISTS troll_patterns (
+        id TEXT PRIMARY KEY, pattern_type TEXT, pattern_data TEXT,
+        detected_count INTEGER, last_detected INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS word_learning_candidates (
+        word TEXT PRIMARY KEY, frequency INTEGER, danger_score REAL,
+        suggested_type TEXT, last_seen INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS ai_ticket_responses (
+        ticket_id TEXT PRIMARY KEY, user_id TEXT, initial_questions TEXT,
+        ai_summary TEXT, status TEXT, created_at INTEGER
+    );
 `);
 
 module.exports = db;

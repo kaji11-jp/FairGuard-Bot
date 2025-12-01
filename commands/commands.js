@@ -132,7 +132,41 @@ const commands = [
         .addSubcommand(subcommand =>
             subcommand
                 .setName('close')
-                .setDescription('チケットを閉鎖'))
+                .setDescription('チケットを閉鎖')),
+    
+    // フルモード専用コマンド
+    new SlashCommandBuilder()
+        .setName('tone')
+        .setDescription('文章をやわらかく言い換えます（フルモード専用）')
+        .addStringOption(option =>
+            option.setName('text')
+                .setDescription('リライトする文章')
+                .setRequired(true)),
+    
+    new SlashCommandBuilder()
+        .setName('analytics')
+        .setDescription('警告相関分析レポートを表示します（管理者専用）')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+        .addIntegerOption(option =>
+            option.setName('days')
+                .setDescription('分析期間（日数、デフォルト: 30）')
+                .setRequired(false)
+                .setMinValue(1)
+                .setMaxValue(365)),
+    
+    new SlashCommandBuilder()
+        .setName('trustscore')
+        .setDescription('ユーザーの信用スコアを表示します（管理者専用）')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('確認するユーザー')
+                .setRequired(false)),
+    
+    new SlashCommandBuilder()
+        .setName('wordcandidates')
+        .setDescription('危険ワード候補を表示します（管理者専用、フルモード専用）')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
 ].map(command => command.toJSON());
 
 module.exports = { commands };

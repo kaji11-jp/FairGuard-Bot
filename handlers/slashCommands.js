@@ -142,7 +142,20 @@ async function handleSlashCommand(interaction) {
             });
             setOpenTicket(interaction.user.id, ch.id);
             const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_ticket').setLabel('Close').setStyle(ButtonStyle.Danger));
-            ch.send({ content: `${interaction.user} お問い合わせをどうぞ`, components: [row] });
+            
+            // フルモードの場合、AI一次対応を追加
+            if (CONFIG.AI_TICKET_RESPONSE_ENABLED) {
+                const { handleAITicketResponse } = require('../services/ticketAI');
+                const aiResponse = await handleAITicketResponse(ch, interaction.user, 'チケットを作成しました');
+                if (aiResponse) {
+                    ch.send({ content: `${interaction.user} お問い合わせをどうぞ`, embeds: [aiResponse], components: [row] });
+                } else {
+                    ch.send({ content: `${interaction.user} お問い合わせをどうぞ`, components: [row] });
+                }
+            } else {
+                ch.send({ content: `${interaction.user} お問い合わせをどうぞ`, components: [row] });
+            }
+            
             return interaction.editReply({ content: `✅ チケット作成: ${ch}` });
         }
         
@@ -503,6 +516,107 @@ async function handleSlashCommand(interaction) {
             .setTitle('⚠️ 警告履歴')
             .setDescription(logText.length > 4000 ? logText.substring(0, 4000) + '...' : logText)
             .setFooter({ text: targetId ? `対象: ${targetId}` : `最新${logs.length}件` });
+        
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+    
+    // toneコマンド（フルモード専用）
+    if (commandName === 'tone') {
+        if (CONFIG.AI_MODE !== 'full') {
+            return interaction.reply({ content: '❌ このコマンドはフルモード（AI_MODE=full）でのみ利用可能です', ephemeral: true });
+        }
+        
+        const text = interaction.options.getString('text');
+        await interaction.deferReply();
+        
+        const { rewriteTextSoft } = require('../services/textRewriter');
+        const result = await rewriteTextSoft(text);
+        
+        if (!result) {
+            return interaction.editReply({ content: '❌ リライトに失敗しました' });
+        }
+        
+        const embed = new EmbedBuilder()
+            .setColor('#0099ff')
+            .setTitle('✨ 文章リライト結果')
+            .addFields(
+                { name: '元の文章', value: text, inline: false },
+                { name: 'リライト後', value: result.rewritten, inline: false },
+                { name: '変更点', value: result.changes?.join('\n') || 'なし', inline: false },
+                { name: 'トーン改善', value: result.tone_improvement || 'なし', inline: false }
+            )
+            .setFooter({ text: CONFIG.GEMINI_CREDIT, iconURL: CONFIG.GEMINI_ICON });
+        
+        return interaction.editReply({ embeds: [embed] });
+    }
+    
+    // analyticsコマンド（管理者専用）
+    if (commandName === 'analytics') {
+        if (!isAdmin) {
+            return interaction.reply({ content: '❌ このコマンドは管理者専用です', ephemeral: true });
+        }
+        
+        const days = interaction.options.getInteger('days') || 30;
+        await interaction.deferReply();
+        
+        const { generateAnalyticsReport, createAnalyticsEmbed } = require('../services/analytics');
+        const report = generateAnalyticsReport(interaction.guild.id, days);
+        const embed = createAnalyticsEmbed(report, interaction.guild);
+        
+        return interaction.editReply({ embeds: [embed] });
+    }
+    
+    // trustscoreコマンド（管理者専用）
+    if (commandName === 'trustscore') {
+        if (!isAdmin) {
+            return interaction.reply({ content: '❌ このコマンドは管理者専用です', ephemeral: true });
+        }
+        
+        const targetUser = interaction.options.getUser('user') || interaction.user;
+        const { getTrustScore, updateTrustScore } = require('../services/trustScore');
+        
+        await interaction.deferReply();
+        const score = updateTrustScore(targetUser.id);
+        
+        const embed = new EmbedBuilder()
+            .setColor(score >= 70 ? '#00ff00' : score >= 40 ? '#ffaa00' : '#ff0000')
+            .setTitle('📊 信用スコア')
+            .setDescription(`**${targetUser.tag}** の信用スコア`)
+            .addFields(
+                { name: 'スコア', value: `${score}/100`, inline: true },
+                { name: '評価', value: score >= 70 ? '🟢 良好' : score >= 40 ? '🟡 注意' : '🔴 要監視', inline: true }
+            )
+            .setFooter({ text: 'スコアは警告数、スパム傾向、参加日数などから計算されます' });
+        
+        return interaction.editReply({ embeds: [embed] });
+    }
+    
+    // wordcandidatesコマンド（管理者専用、フルモード専用）
+    if (commandName === 'wordcandidates') {
+        if (!isAdmin) {
+            return interaction.reply({ content: '❌ このコマンドは管理者専用です', ephemeral: true });
+        }
+        
+        if (CONFIG.AI_MODE !== 'full') {
+            return interaction.reply({ content: '❌ このコマンドはフルモード（AI_MODE=full）でのみ利用可能です', ephemeral: true });
+        }
+        
+        const { getWordCandidates } = require('../services/wordLearning');
+        const candidates = getWordCandidates(10);
+        
+        if (candidates.length === 0) {
+            return interaction.reply({ content: '📝 危険ワード候補はありません', ephemeral: true });
+        }
+        
+        const candidatesText = candidates.map(c => 
+            `\`${c.word}\`: 危険度${c.danger_score}/100, 出現${c.frequency}回, 推奨: ${c.suggested_type || '未定'}`
+        ).join('\n');
+        
+        const embed = new EmbedBuilder()
+            .setColor('#ff9900')
+            .setTitle('🔍 危険ワード候補')
+            .setDescription(candidatesText)
+            .setFooter({ text: 'AIが自動検出した危険ワード候補です。必要に応じて手動で追加してください。' });
         
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }

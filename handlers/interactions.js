@@ -2,6 +2,7 @@ const { isAdminUser } = require('../utils/permissions');
 const { removeOpenTicket } = require('../utils/tickets');
 const { executeManualWarn } = require('./commands');
 const { handleSlashCommand } = require('./slashCommands');
+const { handleConfirmation } = require('../services/aiConfirmation');
 const db = require('../database');
 
 async function handleInteraction(interaction) {
@@ -12,6 +13,17 @@ async function handleInteraction(interaction) {
     
     // ボタンインタラクション処理
     if (!interaction.isButton()) return;
+    
+    // AI確認フロー
+    if (interaction.customId.startsWith('ai_confirm_')) {
+        const confirmationId = interaction.customId.replace('ai_confirm_', '');
+        return handleConfirmation(interaction, confirmationId, true);
+    }
+    
+    if (interaction.customId.startsWith('ai_reject_')) {
+        const confirmationId = interaction.customId.replace('ai_reject_', '');
+        return handleConfirmation(interaction, confirmationId, false);
+    }
     
     // チケット閉鎖
     if (interaction.customId === 'close_ticket') {

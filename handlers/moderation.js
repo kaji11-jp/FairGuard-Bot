@@ -184,10 +184,38 @@ async function handleModeration(message, client) {
 
         const result = await callGemini(prompt);
         if (result && result.verdict === "UNSAFE") {
+            // フルモードの場合、確認フローを使用
+            if (CONFIG.AI_CONFIRMATION_ENABLED) {
+                const { requestAIConfirmation } = require('../services/aiConfirmation');
+                const confirmation = await requestAIConfirmation(message, result, context, grayMatch);
+                if (confirmation) {
+                    const alertCh = message.guild.channels.cache.get(CONFIG.ALERT_CHANNEL_ID);
+                    if (alertCh) {
+                        alertCh.send({ embeds: [confirmation.embed], components: [confirmation.row] });
+                    }
+                    return; // 確認待ち
+                }
+            }
+            // 確認フローが無効または失敗した場合は通常処理
             await executePunishment(message, "AI_JUDGE", grayMatch, result.reason, context, result, client);
         } else {
             console.log(`[SAFE] ${message.author.tag}: ${grayMatch} -> ${result?.reason}`);
         }
+    }
+    
+    // トーン分析（ソフト警告）- フルモードのみ
+    if (CONFIG.SOFT_WARNING_ENABLED) {
+        const { analyzeTone } = require('../services/toneAnalysis');
+        await analyzeTone(message).catch(e => console.error('Tone analysis error:', e));
+    }
+    
+    // 信用スコア更新
+    const { updateTrustScore, isLowTrustUser } = require('../services/trustScore');
+    updateTrustScore(message.author.id);
+    
+    // 低信用スコアユーザーの場合は厳格化
+    if (isLowTrustUser(message.author.id)) {
+        // 追加のチェックやアラートをここに追加可能
     }
 }
 
