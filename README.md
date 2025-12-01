@@ -151,14 +151,67 @@ Google Gemini APIを活用した、公平で洗練されたコミュニティ運
 
 ### ステップ2: Google Gemini API キーの取得
 
-1. [Google AI Studio](https://makersuite.google.com/app/apikey) にアクセス
-2. 「Create API Key」をクリック
-3. APIキーをコピー（後で使用します）
+Google Gemini APIキーは、このBotのAI機能を動作させるために必要です。**無料で取得できます**。
+
+#### 2-1. Googleアカウントでログイン
+
+1. [Google AI Studio](https://aistudio.google.com/app/apikey) にアクセス
+2. Googleアカウントでログインします（GmailアカウントがあればOK）
+
+**注意**: 初回アクセスの場合、利用規約への同意が求められる場合があります。
+
+#### 2-2. APIキーの作成
+
+1. ページにアクセスすると、以下のような画面が表示されます：
+   - 「Get API key」または「API キーを取得」というボタンがあるはずです
+   - もしくは、左側のメニューから「Get API key」を選択
+
+2. 「Create API key」または「API キーを作成」をクリック
+
+3. プロジェクトの選択画面が表示されます：
+   - **初めての場合**: 「Create API key in new project」を選択
+   - **既存のプロジェクトがある場合**: ドロップダウンからプロジェクトを選択して「Create API key in existing project」を選択
+
+4. APIキーが生成されます：
+   - **重要**: この画面で表示されるAPIキーは**この時だけ**表示されます
+   - 必ずコピーして安全な場所に保存してください
+   - 例: `AIzaSyAbCdEfGhIjKlMnOpQrStUvWxYz1234567`
+
+#### 2-3. APIキーの確認と管理
+
+1. 作成したAPIキーは、[Google Cloud Console](https://console.cloud.google.com/apis/credentials) で確認・管理できます
+2. 必要に応じて、APIキーの制限を設定できます（推奨）：
+   - 「API キーの制限」から「API の制限」を選択
+   - 「Generative Language API」のみを許可することを推奨
+
+#### 2-4. 無料枠について
+
+Google Gemini APIには**無料枠**があります：
+
+- **無料枠**: 1分あたり15リクエスト、1日あたり1,500リクエスト
+- 小〜中規模のサーバーであれば、無料枠で十分運用可能です
+- 使用量は [Google Cloud Console](https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas) で確認できます
+
+#### 2-5. よくある質問
+
+**Q: APIキーは安全ですか？**
+- APIキーは他人に知られないようにしてください
+- `.env` ファイルに保存し、GitHubなどにアップロードしないでください
+- もし漏洩した場合は、Google Cloud Consoleからすぐに削除・再作成してください
+
+**Q: 無料枠を超えたらどうなりますか？**
+- 無料枠を超えると、APIリクエストがエラーになります
+- 有料プランにアップグレードするか、使用量を減らす必要があります
+
+**Q: APIキーが表示されない/エラーが出る**
+- ブラウザのキャッシュをクリアしてみてください
+- 別のブラウザで試してみてください
+- Googleアカウントの認証状態を確認してください
 
 ### ステップ3: リポジトリのクローン
 
 ```bash
-git clone https://github.com/your-username/FairGuard-Bot.git
+git clone https://github.com/kaji11-jp/FairGuard-Bot.git
 cd FairGuard-Bot
 ```
 
@@ -196,11 +249,53 @@ AI_MODE="free"
 
 #### 環境変数の取得方法
 
-- **BOT_TOKEN**: Discord Developer PortalのBotタブから取得
-- **DISCORD_GUILD_ID**: Discordでサーバー設定 → ウィジェット → サーバーIDを有効化してコピー
-- **DISCORD_ADMIN_ROLE_ID**: サーバー設定 → ロール → 管理者ロールを右クリック → IDをコピー（開発者モードを有効化する必要があります）
-- **DISCORD_ALERT_CHANNEL_ID**: チャンネルを右クリック → IDをコピー
-- **DISCORD_TICKET_CATEGORY_ID**: カテゴリを右クリック → IDをコピー
+##### Discord関連のID取得方法
+
+DiscordのIDを取得するには、**開発者モード**を有効化する必要があります：
+
+1. Discordを開く
+2. 設定（⚙️）→ 詳細設定 → 「開発者モード」をONにする
+3. これで、ユーザー、チャンネル、ロールなどを右クリックして「IDをコピー」ができるようになります
+
+**各IDの取得方法**:
+
+- **BOT_TOKEN**: 
+  - [Discord Developer Portal](https://discord.com/developers/applications) にアクセス
+  - 作成したアプリケーションを選択
+  - 左メニューの「Bot」をクリック
+  - 「Token」セクションの「Reset Token」または「Copy」をクリック
+  - **重要**: トークンは他人に知られないようにしてください
+
+- **DISCORD_GUILD_ID**（サーバーID）:
+  - Discordでサーバーを開く
+  - サーバー名を右クリック → 「IDをコピー」
+  - または、サーバー設定 → ウィジェット → サーバーIDを有効化してコピー
+
+- **DISCORD_ADMIN_ROLE_ID**（管理者ロールID）:
+  - サーバー設定 → ロール
+  - 管理者ロールを右クリック → 「IDをコピー」
+  - または、ロール名を右クリック → 「IDをコピー」
+
+- **DISCORD_ALERT_CHANNEL_ID**（アラートチャンネルID）:
+  - 警告やログを送信したいチャンネルを右クリック
+  - 「IDをコピー」を選択
+
+- **DISCORD_TICKET_CATEGORY_ID**（チケットカテゴリID）:
+  - チケットチャンネルを作成するカテゴリを右クリック
+  - 「IDをコピー」を選択
+  - カテゴリがない場合は、新しく作成してください
+
+##### Google Gemini APIキーの設定
+
+- **GEMINI_API_KEY**: 
+  - 上記の「ステップ2: Google Gemini API キーの取得」を参照
+  - 取得したAPIキーをそのまま貼り付けます
+  - 例: `GEMINI_API_KEY="AIzaSyAbCdEfGhIjKlMnOpQrStUvWxYz1234567"`
+
+**注意事項**:
+- `.env` ファイルは `.gitignore` に含まれているため、GitHubにアップロードされません
+- すべての値は**ダブルクォート（`"`）で囲む**必要があります
+- 値の前後に余分なスペースを入れないでください
 
 ### ステップ6: スラッシュコマンドの登録
 
@@ -495,11 +590,11 @@ FairGuard-Bot/
 
 ### バグ報告
 
-バグを発見した場合は、[Issues](https://github.com/your-username/FairGuard-Bot/issues) で報告してください。
+バグを発見した場合は、[Issues](https://github.com/kaji11-jp/FairGuard-Bot/issues) で報告してください。
 
 ### 機能要望
 
-新機能の要望も [Issues](https://github.com/your-username/FairGuard-Bot/issues) で受け付けています。
+新機能の要望も [Issues](https://github.com/kaji11-jp/FairGuard-Bot/issues) で受け付けています。
 
 ---
 
@@ -507,19 +602,6 @@ FairGuard-Bot/
 
 このプロジェクトは [MIT License](LICENSE) の下で公開されています。
 
----
-
-## 🚧 開発者の小言 (The Dev's Monologue)
-
-このBotは、当初、**とある特定のサーバーのために**、手間暇かけて開発されたモデレーションシステムです。
-
-特に、高性能なAI（Google Gemini）を組み込むことで、感情的なモデレーションや誤爆を減らし、**公平で洗練されたコミュニティ運営**を目指し、機能の洗練に多くの時間を費やしました。
-
-しかし、開発期間中のコミュニケーションや事前の告知もなく、ある日突然、Botがサーバーから追い出されました。
-
-「特定のコミュニティのために無償で提供した労力が、一方的な理由で切り捨てられた」という結論に至ったため、作業が割に合わないと判断し、このプロジェクトは**オープンソース**として公開することにしました。
-
-特定のコミュニティのためだけに作られたシステムですが、自由に使ってください。
 
 ---
 
@@ -527,8 +609,8 @@ FairGuard-Bot/
 
 問題が発生した場合や質問がある場合は、以下からお問い合わせください：
 
-- [GitHub Issues](https://github.com/your-username/FairGuard-Bot/issues)
-- [Discord サーバー](https://discord.gg/your-server)（もしあれば）
+- [GitHub Issues](https://github.com/kaji11-jp/FairGuard-Bot/issues)
+
 
 ---
 
