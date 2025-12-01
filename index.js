@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const CONFIG = require('./config');
 const db = require('./database');
+const logger = require('./utils/logger');
 const { blacklistCache, graylistCache } = require('./utils/bannedWords');
 const { isAdminUser } = require('./utils/permissions');
 const { checkSpamAndLongMessage, handleModeration } = require('./handlers/moderation');
@@ -13,8 +14,8 @@ const client = new Client({
 });
 
 client.on('ready', () => {
-    console.log(`✅ Logged in as ${client.user.tag}`);
-    console.log(`🛡️  System Ready: Blacklist=${blacklistCache.size}, Graylist=${graylistCache.size}`);
+    logger.info(`✅ Logged in as ${client.user.tag}`);
+    logger.info(`🛡️  System Ready: Blacklist=${blacklistCache.size}, Graylist=${graylistCache.size}`);
 });
 
 client.on('messageCreate', async (message) => {
@@ -51,7 +52,10 @@ client.on('messageCreate', async (message) => {
             }
         }
     } catch (error) {
-        console.error('Message processing error:', error);
+        logger.error('メッセージ処理エラー', { 
+            error: error.message,
+            stack: error.stack 
+        });
     }
 });
 
@@ -59,7 +63,10 @@ client.on('interactionCreate', async (interaction) => {
     try {
         await handleInteraction(interaction);
     } catch (error) {
-        console.error('Interaction processing error:', error);
+        logger.error('インタラクション処理エラー', { 
+            error: error.message,
+            stack: error.stack 
+        });
     }
 });
 

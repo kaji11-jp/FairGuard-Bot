@@ -1,4 +1,8 @@
 const CONFIG = require('../config');
+const logger = require('../utils/logger');
+
+// スリープ関数（リトライ用）
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // 文脈取得（前後指定数のメッセージを取得）
 async function fetchContext(channel, messageId, beforeLimit = 10, afterLimit = 10) {
@@ -11,7 +15,9 @@ async function fetchContext(channel, messageId, beforeLimit = 10, afterLimit = 1
         try {
             const targetMsg = await channel.messages.fetch(messageId);
             contextMessages.push({ msg: targetMsg, order: 'target' });
-        } catch {}
+        } catch (error) {
+            logger.warn('対象メッセージの取得に失敗', { messageId, error: error.message });
+        }
         
         const afterMessages = await channel.messages.fetch({ limit: afterLimit, after: messageId });
         afterMessages.forEach(m => contextMessages.push({ msg: m, order: 'after' }));
@@ -22,53 +28,137 @@ async function fetchContext(channel, messageId, beforeLimit = 10, afterLimit = 1
             const marker = order === 'target' ? '【対象】' : '';
             return `${marker}[${msg.author.tag}]: ${msg.content}`;
         }).join('\n');
-    } catch (e) {
-        console.error("Context fetch error:", e);
+    } catch (error) {
+        logger.error('文脈取得エラー', { messageId, error: error.message, stack: error.stack });
         return "文脈取得失敗";
     }
 }
 
-// Gemini API呼び出し
-async function callGemini(prompt) {
-    try {
-        const systemInstruction = `あなたは日本語で応答するAIです。すべての応答は必ず日本語で行ってください。JSON形式で応答する場合も、理由や説明は日本語で記述してください。`;
-        const fullPrompt = `${systemInstruction}\n\n${prompt}`;
-        
-        const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: fullPrompt }] }],
-                generationConfig: { 
-                    responseMimeType: "application/json",
-                    temperature: 0.3 
-                },
-                systemInstruction: {
-                    parts: [{ text: "あなたは日本語で応答するAIです。すべての応答は必ず日本語で行ってください。" }]
+// Gemini API呼び出し（リトライ機構付き）
+async function callGeminiWithRetry(prompt, maxRetries = 3, timeout = 30000) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const systemInstruction = `あなたは日本語で応答するAIです。すべての応答は必ず日本語で行ってください。JSON形式で応答する場合も、理由や説明は日本語で記述してください。`;
+            const fullPrompt = `${systemInstruction}\n\n${prompt}`;
+            
+            // タイムアウト付きfetch
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: fullPrompt }] }],
+                    generationConfig: { 
+                        responseMimeType: "application/json",
+                        temperature: 0.3 
+                    },
+                    systemInstruction: {
+                        parts: [{ text: "あなたは日本語で応答するAIです。すべての応答は必ず日本語で行ってください。" }]
+                    }
+                }),
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                
+                // レート制限エラー（429）の場合はリトライ
+                if (response.status === 429) {
+                    const backoffDelay = Math.pow(2, attempt) * 1000; // 指数バックオフ
+                    logger.warn(`Gemini API レート制限エラー。${backoffDelay}ms後にリトライ`, { 
+                        attempt: attempt + 1, 
+                        maxRetries,
+                        status: response.status 
+                    });
+                    
+                    if (attempt < maxRetries - 1) {
+                        await sleep(backoffDelay);
+                        continue;
+                    }
                 }
-            })
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("Gemini API HTTP Error:", response.status, errorData);
+                
+                // その他のHTTPエラー
+                logger.error('Gemini API HTTPエラー', { 
+                    status: response.status, 
+                    errorData,
+                    attempt: attempt + 1 
+                });
+                return null;
+            }
+            
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            if (!text) {
+                logger.warn('Gemini API: レスポンスにテキストがありません', { 
+                    data,
+                    attempt: attempt + 1 
+                });
+                
+                // 最後の試行でなければリトライ
+                if (attempt < maxRetries - 1) {
+                    await sleep(1000 * (attempt + 1));
+                    continue;
+                }
+                return null;
+            }
+            
+            try {
+                const cleanedText = text.replace(/```json|```/g, '').trim();
+                const parsed = JSON.parse(cleanedText);
+                logger.debug('Gemini API呼び出し成功', { attempt: attempt + 1 });
+                return parsed;
+            } catch (parseError) {
+                logger.error('Gemini API: JSON解析エラー', { 
+                    text: cleanedText.substring(0, 200),
+                    error: parseError.message,
+                    attempt: attempt + 1 
+                });
+                
+                // 最後の試行でなければリトライ
+                if (attempt < maxRetries - 1) {
+                    await sleep(1000 * (attempt + 1));
+                    continue;
+                }
+                return null;
+            }
+        } catch (error) {
+            // ネットワークエラーやタイムアウト
+            if (error.name === 'AbortError') {
+                logger.warn('Gemini API: タイムアウト', { 
+                    timeout,
+                    attempt: attempt + 1 
+                });
+            } else {
+                logger.error('Gemini API呼び出しエラー', { 
+                    error: error.message,
+                    stack: error.stack,
+                    attempt: attempt + 1 
+                });
+            }
+            
+            // 最後の試行でなければリトライ
+            if (attempt < maxRetries - 1) {
+                const backoffDelay = Math.pow(2, attempt) * 1000;
+                await sleep(backoffDelay);
+                continue;
+            }
+            
             return null;
         }
-        
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        
-        if (!text) {
-            console.error("Gemini API: No text in response", data);
-            return null;
-        }
-        
-        const cleanedText = text.replace(/```json|```/g, '').trim();
-        return JSON.parse(cleanedText);
-    } catch (e) {
-        console.error("Gemini API Error:", e);
-        return null;
     }
+    
+    logger.error('Gemini API: 最大リトライ回数に達しました', { maxRetries });
+    return null;
+}
+
+// 後方互換性のため、callGeminiも残す
+async function callGemini(prompt) {
+    return await callGeminiWithRetry(prompt);
 }
 
 // 手動警告のAbuse判定
@@ -120,6 +210,7 @@ ${frequencyWarning}
 module.exports = {
     fetchContext,
     callGemini,
+    callGeminiWithRetry,
     checkWarnAbuse
 };
 

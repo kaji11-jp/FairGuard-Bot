@@ -3,6 +3,8 @@ const { removeOpenTicket } = require('../utils/tickets');
 const { executeManualWarn } = require('./commands');
 const { handleSlashCommand } = require('./slashCommands');
 const { handleConfirmation } = require('../services/aiConfirmation');
+const { pendingWarnsCache } = require('../utils/cache');
+const logger = require('../utils/logger');
 const db = require('../database');
 
 async function handleInteraction(interaction) {
@@ -38,35 +40,43 @@ async function handleInteraction(interaction) {
     
     // 警告確認ボタン
     if (interaction.customId.startsWith('warn_confirm_')) {
-        if (!global.pendingWarns || !global.pendingWarns.has(interaction.message.id) || !interaction.message.author) { 
+        const warnData = pendingWarnsCache.get(interaction.message.id);
+        
+        if (!warnData || !interaction.message.author) { 
             return interaction.reply({ content: '❌ この警告リクエストは期限切れです', ephemeral: true });
         }
-        
-        const warnData = global.pendingWarns.get(interaction.message.id);
         
         if (!isAdminUser(interaction.member)) {
             return interaction.reply({ content: '❌ あなたにはこの操作を実行する権限がありません', ephemeral: true });
         }
         
-        const target = await interaction.guild.members.fetch(warnData.targetId).catch(() => null);
-        if (!target) {
-            return interaction.reply({ content: '❌ 対象ユーザーが見つかりません', ephemeral: true });
+        try {
+            const target = await interaction.guild.members.fetch(warnData.targetId).catch(() => null);
+            if (!target) {
+                return interaction.reply({ content: '❌ 対象ユーザーが見つかりません', ephemeral: true });
+            }
+            
+            await executeManualWarn(interaction.message, target.user, warnData.reason, warnData.content, warnData.context, warnData.messageId, warnData.moderatorId);
+            pendingWarnsCache.delete(interaction.message.id);
+            
+            await interaction.update({ content: '✅ 警告を実行しました', components: [], embeds: [] });
+        } catch (error) {
+            logger.error('警告実行エラー（インタラクション）', { 
+                error: error.message,
+                stack: error.stack 
+            });
+            await interaction.reply({ content: '❌ 警告の実行中にエラーが発生しました', ephemeral: true });
         }
-        
-        await executeManualWarn(interaction.message, target.user, warnData.reason, warnData.content, warnData.context, warnData.messageId, warnData.moderatorId);
-        global.pendingWarns.delete(interaction.message.id);
-        
-        await interaction.update({ content: '✅ 警告を実行しました', components: [], embeds: [] });
         return;
     }
     
     // 警告キャンセルボタン
     if (interaction.customId.startsWith('warn_cancel_')) {
-        if (!global.pendingWarns || !global.pendingWarns.has(interaction.message.id)) {
+        if (!pendingWarnsCache.has(interaction.message.id)) {
             return interaction.reply({ content: '❌ この警告リクエストは期限切れです', ephemeral: true });
         }
         
-        global.pendingWarns.delete(interaction.message.id);
+        pendingWarnsCache.delete(interaction.message.id);
         await interaction.update({ content: '❌ 警告がキャンセルされました', components: [], embeds: [] });
         return;
     }

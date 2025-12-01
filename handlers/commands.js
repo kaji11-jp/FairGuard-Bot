@@ -7,6 +7,8 @@ const { getOpenTicket, setOpenTicket, removeOpenTicket } = require('../utils/tic
 const { addWarning, reduceWarning, getActiveWarningCount } = require('../services/warnings');
 const { fetchContext, callGemini, checkWarnAbuse } = require('../services/ai');
 const { blacklistCache, graylistCache, loadBannedWords } = require('../utils/bannedWords');
+const { pendingWarnsCache } = require('../utils/cache');
+const logger = require('../utils/logger');
 const db = require('../database');
 
 // 手動警告の実行（messageまたはinteractionに対応）
@@ -96,8 +98,12 @@ async function handleCommand(message) {
     
     try {
         saveCommandLog(message.author.id, command, args, message.guild.id, message.channel.id, true);
-    } catch (e) {
-        console.error('Command log save error:', e);
+    } catch (error) {
+        logger.error('コマンドログ保存エラー', { 
+            userId: message.author.id,
+            command,
+            error: error.message 
+        });
     }
 
     if (command === 'help') {
@@ -152,13 +158,40 @@ async function handleCommand(message) {
 [文脈]: ${log.context_data}
         `;
 
-        const result = await callGemini(prompt);
-        if (!result) return message.reply('❌ AIエラー');
+        let result;
+        try {
+            result = await callGemini(prompt);
+        } catch (error) {
+            logger.error('異議申し立てAI判定エラー', { 
+                userId: message.author.id,
+                logId,
+                error: error.message,
+                stack: error.stack 
+            });
+            return message.reply('❌ AI判定中にエラーが発生しました。しばらくしてから再試行してください。');
+        }
+        
+        if (!result) {
+            logger.warn('異議申し立てAI判定失敗: nullレスポンス', { 
+                userId: message.author.id,
+                logId 
+            });
+            return message.reply('❌ AI判定に失敗しました。しばらくしてから再試行してください。');
+        }
 
         const isAccepted = result.status === 'ACCEPTED';
         if (isAccepted) {
-            reduceWarning(message.author.id, 1);
-            db.prepare('UPDATE mod_logs SET is_resolved = 1 WHERE id = ?').run(logId);
+            try {
+                reduceWarning(message.author.id, 1);
+                db.prepare('UPDATE mod_logs SET is_resolved = 1 WHERE id = ?').run(logId);
+            } catch (error) {
+                logger.error('異議申し立て処理エラー', { 
+                    userId: message.author.id,
+                    logId,
+                    error: error.message 
+                });
+                return message.reply('❌ 処理中にエラーが発生しました。');
+            }
         }
 
         const embed = new EmbedBuilder()
@@ -251,7 +284,19 @@ async function handleCommand(message) {
             WHERE user_id = ? AND type = 'WARN_MANUAL' AND moderator_id = ? AND timestamp > ?
         `).get(target.id, message.author.id, oneHourAgo);
         
-        const abuseCheck = await checkWarnAbuse(message.author.id, target.id, reason, context, content);
+        let abuseCheck;
+        try {
+            abuseCheck = await checkWarnAbuse(message.author.id, target.id, reason, context, content);
+        } catch (error) {
+            logger.error('警告濫用チェックエラー', { 
+                moderatorId: message.author.id,
+                targetId: target.id,
+                error: error.message,
+                stack: error.stack 
+            });
+            // エラー時は警告を続行（安全側に倒す）
+            abuseCheck = null;
+        }
         
         if (abuseCheck && abuseCheck.is_abuse) {
             const embed = new EmbedBuilder()
@@ -300,20 +345,36 @@ async function handleCommand(message) {
                 confirmMsgId: confirmMsg.id
             };
             
-            if (!global.pendingWarns) global.pendingWarns = new Map();
-            global.pendingWarns.set(confirmMsg.id, pendingWarnData);
+            // TTL付きキャッシュに保存（5分で自動削除）
+            pendingWarnsCache.set(confirmMsg.id, pendingWarnData, 5 * 60 * 1000);
             
+            // 期限切れ時にボタンを無効化
             setTimeout(() => {
-                if (global.pendingWarns && global.pendingWarns.has(confirmMsg.id)) {
-                    global.pendingWarns.delete(confirmMsg.id);
-                    confirmMsg.edit({ components: [] }).catch(() => {});
+                if (pendingWarnsCache.has(confirmMsg.id)) {
+                    pendingWarnsCache.delete(confirmMsg.id);
+                    confirmMsg.edit({ components: [] }).catch(error => {
+                        logger.warn('警告確認メッセージ編集エラー', { 
+                            messageId: confirmMsg.id,
+                            error: error.message 
+                        });
+                    });
                 }
             }, 5 * 60 * 1000);
             
             return;
         }
         
-        await executeManualWarn(message, target, reason, content, context, targetMessageId);
+        try {
+            await executeManualWarn(message, target, reason, content, context, targetMessageId);
+        } catch (error) {
+            logger.error('手動警告実行エラー', { 
+                moderatorId: message.author.id,
+                targetId: target.id,
+                error: error.message,
+                stack: error.stack 
+            });
+            return message.reply('❌ 警告の実行中にエラーが発生しました。');
+        }
     }
 
     if (command === 'unwarn') {

@@ -218,7 +218,13 @@ cd FairGuard-Bot
 ### ステップ4: 依存関係のインストール
 
 ```bash
-npm install discord.js better-sqlite3 dotenv
+npm install
+```
+
+または個別にインストールする場合：
+
+```bash
+npm install discord.js better-sqlite3 dotenv winston
 ```
 
 ### ステップ5: 環境変数の設定

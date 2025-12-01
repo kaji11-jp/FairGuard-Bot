@@ -269,12 +269,12 @@ async function handleSlashCommand(interaction) {
                 confirmMsgId: confirmMsg.id
             };
             
-            if (!global.pendingWarns) global.pendingWarns = new Map();
-            global.pendingWarns.set(confirmMsg.id, pendingWarnData);
+            const { pendingWarnsCache } = require('../utils/cache');
+            pendingWarnsCache.set(confirmMsg.id, pendingWarnData, 5 * 60 * 1000);
             
             setTimeout(() => {
-                if (global.pendingWarns && global.pendingWarns.has(confirmMsg.id)) {
-                    global.pendingWarns.delete(confirmMsg.id);
+                if (pendingWarnsCache.has(confirmMsg.id)) {
+                    pendingWarnsCache.delete(confirmMsg.id);
                     confirmMsg.edit({ components: [] }).catch(() => {});
                 }
             }, 5 * 60 * 1000);

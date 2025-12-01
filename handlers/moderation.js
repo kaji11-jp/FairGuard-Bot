@@ -5,6 +5,7 @@ const { blacklistCache, graylistCache } = require('../utils/bannedWords');
 const { fetchContext, callGemini } = require('../services/ai');
 const { addWarning, getActiveWarningCount } = require('../services/warnings');
 const { saveModLog } = require('../utils/logs');
+const logger = require('../utils/logger');
 const db = require('../database');
 
 // 長文・連投検出（AI判定付き）
@@ -53,9 +54,27 @@ async function checkSpamAndLongMessage(message, client) {
 [過去10秒以内のメッセージ数]: ${recentMessages.count}件
         `;
         
-        const result = await callGemini(prompt);
+        let result;
+        try {
+            result = await callGemini(prompt);
+        } catch (error) {
+            logger.error('AI判定エラー（長文・連投検出）', { 
+                userId: message.author.id,
+                error: error.message,
+                stack: error.stack 
+            });
+            // エラー時は安全側に倒して処理を続行しない
+            return;
+        }
         
-        if (result && result.verdict === "PUNISH") {
+        if (!result) {
+            logger.warn('AI判定失敗: nullレスポンス（長文・連投検出）', { 
+                userId: message.author.id 
+            });
+            return;
+        }
+        
+        if (result.verdict === "PUNISH") {
             const currentWarnCount = getActiveWarningCount(userId);
             
             const context = await fetchContext(message.channel, message.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
@@ -90,10 +109,23 @@ async function checkSpamAndLongMessage(message, client) {
                     )
                     .setFooter({ text: CONFIG.GEMINI_CREDIT, iconURL: CONFIG.GEMINI_ICON });
                 
-                message.channel.send({ embeds: [embed] });
+                message.channel.send({ embeds: [embed] }).catch(error => {
+                    logger.error('警告メッセージ送信エラー', { 
+                        userId: message.author.id,
+                        error: error.message 
+                    });
+                });
             } else {
                 try {
                     await message.delete();
+                } catch (deleteError) {
+                    logger.warn('メッセージ削除エラー', { 
+                        messageId: message.id,
+                        error: deleteError.message 
+                    });
+                }
+                
+                try {
                     const context = await fetchContext(message.channel, message.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
                     const logId = Date.now().toString(36);
                     
@@ -124,13 +156,28 @@ async function checkSpamAndLongMessage(message, client) {
                         )
                         .setFooter({ text: CONFIG.GEMINI_CREDIT, iconURL: CONFIG.GEMINI_ICON });
                     
-                    message.channel.send({ embeds: [embed] });
-                } catch (e) {
-                    console.error('Spam/Long message punishment error:', e);
+                    message.channel.send({ embeds: [embed] }).catch(error => {
+                        logger.error('削除通知メッセージ送信エラー', { 
+                            userId: message.author.id,
+                            error: error.message 
+                        });
+                    });
+                } catch (error) {
+                    logger.error('長文・連投処罰処理エラー', { 
+                        userId: message.author.id,
+                        error: error.message,
+                        stack: error.stack 
+                    });
                 }
             }
         } else {
-            console.log(`[SAFE] ${message.author.tag}: ${isLongMessage ? '長文' : ''}${isSpamCandidate ? '連投' : ''} -> ${result?.reason || 'AI判定なし'}`);
+            logger.debug('AI判定: SAFE（長文・連投検出）', { 
+                userId: message.author.id,
+                tag: message.author.tag,
+                isLongMessage,
+                isSpamCandidate,
+                reason: result?.reason 
+            });
         }
     }
     
@@ -182,8 +229,29 @@ async function handleModeration(message, client) {
 [対象発言]: ${message.content}
         `;
 
-        const result = await callGemini(prompt);
-        if (result && result.verdict === "UNSAFE") {
+        let result;
+        try {
+            result = await callGemini(prompt);
+        } catch (error) {
+            logger.error('AI判定エラー（グレーリスト）', { 
+                userId: message.author.id,
+                grayMatch,
+                error: error.message,
+                stack: error.stack 
+            });
+            // エラー時は安全側に倒して処理を続行しない
+            return;
+        }
+        
+        if (!result) {
+            logger.warn('AI判定失敗: nullレスポンス（グレーリスト）', { 
+                userId: message.author.id,
+                grayMatch 
+            });
+            return;
+        }
+        
+        if (result.verdict === "UNSAFE") {
             // フルモードの場合、確認フローを使用
             if (CONFIG.AI_CONFIRMATION_ENABLED) {
                 const { requestAIConfirmation } = require('../services/aiConfirmation');
@@ -199,23 +267,40 @@ async function handleModeration(message, client) {
             // 確認フローが無効または失敗した場合は通常処理
             await executePunishment(message, "AI_JUDGE", grayMatch, result.reason, context, result, client);
         } else {
-            console.log(`[SAFE] ${message.author.tag}: ${grayMatch} -> ${result?.reason}`);
+            logger.debug('AI判定: SAFE（グレーリスト）', { 
+                userId: message.author.id,
+                tag: message.author.tag,
+                grayMatch,
+                reason: result?.reason 
+            });
         }
     }
     
     // トーン分析（ソフト警告）- フルモードのみ
     if (CONFIG.SOFT_WARNING_ENABLED) {
         const { analyzeTone } = require('../services/toneAnalysis');
-        await analyzeTone(message).catch(e => console.error('Tone analysis error:', e));
+        await analyzeTone(message).catch(error => {
+            logger.error('トーン分析エラー', { 
+                userId: message.author.id,
+                error: error.message 
+            });
+        });
     }
     
     // 信用スコア更新
-    const { updateTrustScore, isLowTrustUser } = require('../services/trustScore');
-    updateTrustScore(message.author.id);
-    
-    // 低信用スコアユーザーの場合は厳格化
-    if (isLowTrustUser(message.author.id)) {
-        // 追加のチェックやアラートをここに追加可能
+    try {
+        const { updateTrustScore, isLowTrustUser } = require('../services/trustScore');
+        updateTrustScore(message.author.id);
+        
+        // 低信用スコアユーザーの場合は厳格化
+        if (isLowTrustUser(message.author.id)) {
+            // 追加のチェックやアラートをここに追加可能
+        }
+    } catch (error) {
+        logger.error('信用スコア更新エラー', { 
+            userId: message.author.id,
+            error: error.message 
+        });
     }
 }
 
@@ -224,17 +309,18 @@ async function executePunishment(message, type, word, reason, context, aiResult,
     const { saveModLog } = require('../utils/logs');
     const { EmbedBuilder } = require('discord.js');
     
-    const logId = Date.now().toString(36);
-    
-    const currentWarnCount = getActiveWarningCount(message.author.id);
-    
-    saveModLog({
-        id: logId, type: type, userId: message.author.id, moderatorId: client.user.id,
-        timestamp: Date.now(), reason: reason, content: message.content, 
-        contextData: context, aiAnalysis: aiResult ? JSON.stringify(aiResult) : null
-    });
-    
-    const warnCount = addWarning(message.author.id, reason, client.user.id, logId);
+    try {
+        const logId = Date.now().toString(36);
+        
+        const currentWarnCount = getActiveWarningCount(message.author.id);
+        
+        saveModLog({
+            id: logId, type: type, userId: message.author.id, moderatorId: client.user.id,
+            timestamp: Date.now(), reason: reason, content: message.content, 
+            contextData: context, aiAnalysis: aiResult ? JSON.stringify(aiResult) : null
+        });
+        
+        const warnCount = addWarning(message.author.id, reason, client.user.id, logId);
     
     if (currentWarnCount < 3) {
         const embed = new EmbedBuilder()
@@ -252,9 +338,21 @@ async function executePunishment(message, type, word, reason, context, aiResult,
             embed.setFooter({ text: CONFIG.GEMINI_CREDIT, iconURL: CONFIG.GEMINI_ICON });
         }
 
-        message.channel.send({ embeds: [embed] });
+        message.channel.send({ embeds: [embed] }).catch(error => {
+            logger.error('警告メッセージ送信エラー（executePunishment）', { 
+                userId: message.author.id,
+                error: error.message 
+            });
+        });
     } else {
-        try { await message.delete(); } catch {}
+        try { 
+            await message.delete(); 
+        } catch (deleteError) {
+            logger.warn('メッセージ削除エラー（executePunishment）', { 
+                messageId: message.id,
+                error: deleteError.message 
+            });
+        }
         
         const embed = new EmbedBuilder()
             .setColor(type === 'BLACKLIST' ? '#ff0000' : '#FF4500')
@@ -271,12 +369,31 @@ async function executePunishment(message, type, word, reason, context, aiResult,
             embed.setFooter({ text: CONFIG.GEMINI_CREDIT, iconURL: CONFIG.GEMINI_ICON });
         }
 
-        message.channel.send({ embeds: [embed] });
+        message.channel.send({ embeds: [embed] }).catch(error => {
+            logger.error('削除通知メッセージ送信エラー（executePunishment）', { 
+                userId: message.author.id,
+                error: error.message 
+            });
+        });
     }
 
     if (warnCount >= CONFIG.WARN_THRESHOLD) {
         const alertCh = message.guild.channels.cache.get(CONFIG.ALERT_CHANNEL_ID);
-        if (alertCh) alertCh.send(`🚨 **要レビュー**: ${message.author} が警告閾値に達しました。`);
+        if (alertCh) {
+            alertCh.send(`🚨 **要レビュー**: ${message.author} が警告閾値に達しました。`).catch(error => {
+                logger.error('アラートチャンネル送信エラー', { 
+                    error: error.message 
+                });
+            });
+        }
+    }
+    } catch (error) {
+        logger.error('処罰実行エラー', { 
+            userId: message.author.id,
+            type,
+            error: error.message,
+            stack: error.stack 
+        });
     }
 }
 
