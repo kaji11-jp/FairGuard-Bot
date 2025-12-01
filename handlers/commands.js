@@ -8,6 +8,7 @@ const { addWarning, reduceWarning, getActiveWarningCount } = require('../service
 const { fetchContext, callGemini, checkWarnAbuse } = require('../services/ai');
 const { blacklistCache, graylistCache, loadBannedWords } = require('../utils/bannedWords');
 const { pendingWarnsCache } = require('../utils/cache');
+const { checkHealth, checkHealthDetailed } = require('../utils/healthCheck');
 const logger = require('../utils/logger');
 const db = require('../database');
 
@@ -592,6 +593,33 @@ async function handleCommand(message) {
             .setTitle('⚠️ 警告履歴')
             .setDescription(logText.length > 4000 ? logText.substring(0, 4000) + '...' : logText)
             .setFooter({ text: targetId ? `対象: ${targetId}` : `最新${logs.length}件` });
+        
+        message.reply({ embeds: [embed] });
+    }
+    
+    if (command === 'health' && isAdmin) {
+        const detailed = args[0] === 'detailed';
+        const health = detailed ? checkHealthDetailed() : checkHealth();
+        
+        const embed = new EmbedBuilder()
+            .setColor('#00ff00')
+            .setTitle('💚 ヘルスチェック')
+            .addFields(
+                { name: 'ステータス', value: health.status, inline: true },
+                { name: '稼働時間', value: health.uptimeFormatted, inline: true },
+                { name: 'メモリ使用率', value: health.memory.usagePercent, inline: true },
+                { name: 'メモリ使用量', value: `${health.memory.heapUsed} / ${health.memory.heapTotal}`, inline: false },
+                { name: 'キャッシュ', value: `保留中の警告: ${health.cache.pendingWarns}件`, inline: true },
+                { name: 'データベース', value: health.database.connected ? '✅ 接続中' : '❌ 切断', inline: true }
+            )
+            .setFooter({ text: `Node.js ${health.node.version} | ${health.platform} ${health.node.arch}` })
+            .setTimestamp(new Date(health.timestamp));
+        
+        if (detailed && health.database.stats) {
+            embed.addFields(
+                { name: 'データベース統計', value: `警告: ${health.database.stats.warnings}件\n警告レコード: ${health.database.stats.warningRecords}件\nモデレーションログ: ${health.database.stats.modLogs}件\n禁止ワード: ${health.database.stats.bannedWords}件\nコマンドログ: ${health.database.stats.commandLogs}件`, inline: false }
+            );
+        }
         
         message.reply({ embeds: [embed] });
     }

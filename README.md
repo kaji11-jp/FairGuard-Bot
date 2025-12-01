@@ -367,6 +367,7 @@ Discordのネイティブ機能を使用したモダンなコマンドシステ�
 | `/help` | コマンド一覧を表示 | `/help` |
 | `/appeal <log_id> <reason>` | 警告に対する異議申し立て | `/appeal abc123 誤検知です` |
 | `/ticket open` | サポートチケットを作成 | `/ticket open` |
+| `/health [detailed]` | Botのヘルスチェック情報を表示 | `/health` または `/health detailed` |
 
 #### 👮 管理者用コマンド
 
@@ -381,6 +382,7 @@ Discordのネイティブ機能を使用したモダンなコマンドシステ�
 | `/cmdlog [limit]` | コマンド履歴を表示 | `/cmdlog 20` |
 | `/warnlog [user_id] [limit]` | 警告履歴を表示 | `/warnlog 123456789012345678` |
 | `/ticket close` | チケットを閉鎖 | `/ticket close` |
+| `/health [detailed]` | Botのヘルスチェック情報を表示 | `/health` または `/health detailed` |
 | `/analytics [days]` | 警告相関分析レポート | `/analytics 30` |
 | `/trustscore [user]` | ユーザーの信用スコアを表示 | `/trustscore @user` |
 | `/tone <text>` | 文章をやわらかく言い換え（フルモード専用） | `/tone お前はバカだ` |
@@ -608,6 +610,33 @@ FairGuard-Bot/
 
 このプロジェクトは [MIT License](LICENSE) の下で公開されています。
 
+
+---
+
+## 🧪 テスト
+
+このプロジェクトにはJestを使用したテストスイートが含まれています。
+
+### テストの実行
+
+```bash
+# すべてのテストを実行
+npm test
+
+# ウォッチモードで実行
+npm run test:watch
+
+# カバレッジレポートを生成
+npm run test:coverage
+```
+
+### テストカバレッジ
+
+テストは以下の機能をカバーしています：
+
+- 警告システム（追加、削減、カウント取得）
+- トランザクション管理
+- エラーハンドリング
 
 ---
 
