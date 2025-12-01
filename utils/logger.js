@@ -1,6 +1,7 @@
 const winston = require('winston');
 const path = require('path');
 const fs = require('fs');
+const fsPromises = require('fs').promises;
 
 // ログディレクトリの作成
 const logDir = 'logs';
@@ -69,27 +70,43 @@ if (process.env.NODE_ENV !== 'production') {
     }));
 }
 
-// ログローテーション（古いログを削除）
-function cleanupOldLogs() {
-    const maxAge = 30 * 24 * 60 * 60 * 1000; // 30日
-    const files = fs.readdirSync(logDir);
-    const now = Date.now();
-    
-    files.forEach(file => {
-        const filePath = path.join(logDir, file);
-        const stats = fs.statSync(filePath);
-        if (now - stats.mtime.getTime() > maxAge) {
-            fs.unlinkSync(filePath);
-            logger.info(`古いログファイルを削除: ${file}`);
-        }
-    });
+// ログローテーション（古いログを削除）- 非同期版
+async function cleanupOldLogs() {
+    try {
+        const maxAge = 30 * 24 * 60 * 60 * 1000; // 30日
+        const files = await fsPromises.readdir(logDir);
+        const now = Date.now();
+        
+        const cleanupPromises = files.map(async (file) => {
+            try {
+                const filePath = path.join(logDir, file);
+                const stats = await fsPromises.stat(filePath);
+                if (now - stats.mtime.getTime() > maxAge) {
+                    await fsPromises.unlink(filePath);
+                    logger.info(`古いログファイルを削除: ${file}`);
+                }
+            } catch (error) {
+                logger.warn(`ログファイル削除エラー: ${file}`, { error: error.message });
+            }
+        });
+        
+        await Promise.all(cleanupPromises);
+    } catch (error) {
+        logger.error('ログクリーンアップエラー', { error: error.message, stack: error.stack });
+    }
 }
 
-// 起動時に古いログをクリーンアップ
-cleanupOldLogs();
+// 起動時に古いログをクリーンアップ（非同期で実行、ブロッキングしない）
+cleanupOldLogs().catch(error => {
+    logger.error('起動時のログクリーンアップエラー', { error: error.message });
+});
 
 // 定期的にクリーンアップ（1日1回）
-setInterval(cleanupOldLogs, 24 * 60 * 60 * 1000);
+setInterval(() => {
+    cleanupOldLogs().catch(error => {
+        logger.error('定期ログクリーンアップエラー', { error: error.message });
+    });
+}, 24 * 60 * 60 * 1000);
 
 module.exports = logger;
 

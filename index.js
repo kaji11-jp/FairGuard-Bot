@@ -101,7 +101,8 @@ async function gracefulShutdown(signal) {
         
         // データベースのクローズ
         logger.info('データベースをクローズ中...');
-        if (db && db.open) {
+        const { checkDatabaseHealth } = require('./database');
+        if (db && checkDatabaseHealth()) {
             db.close();
             logger.info('データベースをクローズしました');
         }

@@ -159,6 +159,21 @@ function validateConfig() {
         errors.push('COMMAND_RATE_LIMIT は 1-100 の範囲である必要があります');
     }
     
+    // CONFLICT_CHECK_PROBABILITY の範囲チェック（0.0-1.0）
+    if (CONFIG.CONFLICT_CHECK_PROBABILITY < 0.0 || CONFIG.CONFLICT_CHECK_PROBABILITY > 1.0) {
+        errors.push('CONFLICT_CHECK_PROBABILITY は 0.0-1.0 の範囲である必要があります');
+    }
+    
+    // CACHE_CLEANUP_INTERVAL の範囲チェック（最小1秒、最大1時間）
+    if (CONFIG.CACHE_CLEANUP_INTERVAL < 1000 || CONFIG.CACHE_CLEANUP_INTERVAL > 60 * 60 * 1000) {
+        errors.push('CACHE_CLEANUP_INTERVAL は 1000-3600000 ミリ秒（1秒-1時間）の範囲である必要があります');
+    }
+    
+    // PENDING_WARNS_CACHE_TTL の範囲チェック（最小1分、最大24時間）
+    if (CONFIG.PENDING_WARNS_CACHE_TTL < 60 * 1000 || CONFIG.PENDING_WARNS_CACHE_TTL > 24 * 60 * 60 * 1000) {
+        errors.push('PENDING_WARNS_CACHE_TTL は 60000-86400000 ミリ秒（1分-24時間）の範囲である必要があります');
+    }
+    
     if (errors.length > 0) {
         logger.warn('設定値の警告:', errors);
     }

@@ -1,4 +1,3 @@
-const { checkRateLimit } = require('../../utils/rateLimit');
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
@@ -8,7 +7,13 @@ let testDb;
 const testDbPath = path.join(__dirname, '../../test_bot_data.sqlite');
 
 describe('Rate Limit', () => {
+    let checkRateLimit;
+    let originalDbModule;
+    
     beforeEach(() => {
+        // モジュールキャッシュをクリアして、テスト用データベースを注入
+        jest.resetModules();
+        
         // 既存のテストDBを削除
         if (fs.existsSync(testDbPath)) {
             fs.unlinkSync(testDbPath);
@@ -26,19 +31,41 @@ describe('Rate Limit', () => {
             );
         `);
         
-        // モジュールのデータベース参照を一時的にテストDBに置き換え
+        // データベースモジュールをモック化
+        // 注意: この方法はモジュールの直接上書きを使用していますが、
+        // より堅牢な方法として、依存性注入（DI）パターンの実装を推奨します
         const dbModule = require('../../database');
+        originalDbModule = {
+            prepare: dbModule.prepare,
+            transaction: dbModule.transaction
+        };
+        
+        // テスト用データベースのメソッドをバインド
         dbModule.prepare = testDb.prepare.bind(testDb);
         dbModule.transaction = testDb.transaction.bind(testDb);
+        
+        // rateLimitモジュールを再読み込み（更新されたデータベース参照を使用）
+        delete require.cache[require.resolve('../../utils/rateLimit')];
+        checkRateLimit = require('../../utils/rateLimit').checkRateLimit;
     });
     
     afterEach(() => {
+        // データベースモジュールを元に戻す
+        if (originalDbModule) {
+            const dbModule = require('../../database');
+            dbModule.prepare = originalDbModule.prepare;
+            dbModule.transaction = originalDbModule.transaction;
+        }
+        
         if (testDb) {
             testDb.close();
         }
         if (fs.existsSync(testDbPath)) {
             fs.unlinkSync(testDbPath);
         }
+        
+        // モジュールキャッシュをクリア
+        jest.resetModules();
     });
     
     test('新しいユーザーはレート制限を通過できる', () => {

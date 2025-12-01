@@ -2,6 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const CONFIG = require('../config');
 const db = require('../database');
 const { callGemini, fetchContext } = require('./ai');
+const logger = require('../utils/logger');
 
 // トーン分析（ソフト警告）
 async function analyzeTone(message) {
@@ -33,11 +34,20 @@ async function analyzeTone(message) {
     }
     
     // ソフト警告を記録
-    const softWarningId = Date.now().toString(36);
-    db.prepare(`
-        INSERT INTO soft_warnings (id, user_id, message_id, timestamp, tone_score, suggestion)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `).run(softWarningId, message.author.id, message.id, Date.now(), result.tone_score, result.suggestion);
+    try {
+        const softWarningId = Date.now().toString(36);
+        db.prepare(`
+            INSERT INTO soft_warnings (id, user_id, message_id, timestamp, tone_score, suggestion)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `).run(softWarningId, message.author.id, message.id, Date.now(), result.tone_score, result.suggestion);
+    } catch (error) {
+        logger.error('ソフト警告記録エラー', {
+            userId: message.author.id,
+            messageId: message.id,
+            error: error.message,
+            stack: error.stack
+        });
+    }
     
     // ユーザーに直接DMで通知（公開しない）
     try {
@@ -52,12 +62,16 @@ async function analyzeTone(message) {
             )
             .setFooter({ text: 'これは警告ではありません。気づきを促すための通知です。', iconURL: CONFIG.GEMINI_ICON });
         
-        await message.author.send({ embeds: [embed] }).catch(() => {
+        await message.author.send({ embeds: [embed] }).catch(error => {
+            logger.warn('ソフト警告DM送信失敗（ユーザーがDMを無効化している可能性）', {
+                userId: message.author.id,
+                messageId: message.id,
+                error: error.message
+            });
             // DMが送れない場合はチャンネルに送信（ephemeralは使えないので通常メッセージ）
             // ただし、これは公開されるので注意
         });
     } catch (e) {
-        const logger = require('../utils/logger');
         logger.error('ソフト警告DM送信エラー', {
             userId: message.author.id,
             messageId: message.id,

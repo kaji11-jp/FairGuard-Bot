@@ -9,18 +9,34 @@ async function fetchContext(channel, messageId, beforeLimit = 10, afterLimit = 1
     try {
         const contextMessages = [];
         
-        const beforeMessages = await channel.messages.fetch({ limit: beforeLimit, before: messageId });
-        beforeMessages.forEach(m => contextMessages.push({ msg: m, order: 'before' }));
+        // メッセージ取得を並列化してパフォーマンスを向上
+        const [beforeMessagesResult, targetMsgResult, afterMessagesResult] = await Promise.allSettled([
+            channel.messages.fetch({ limit: beforeLimit, before: messageId }),
+            channel.messages.fetch(messageId).catch(error => {
+                logger.warn('対象メッセージの取得に失敗', { messageId, error: error.message });
+                return null;
+            }),
+            channel.messages.fetch({ limit: afterLimit, after: messageId })
+        ]);
         
-        try {
-            const targetMsg = await channel.messages.fetch(messageId);
-            contextMessages.push({ msg: targetMsg, order: 'target' });
-        } catch (error) {
-            logger.warn('対象メッセージの取得に失敗', { messageId, error: error.message });
+        // beforeMessagesの処理
+        if (beforeMessagesResult.status === 'fulfilled') {
+            beforeMessagesResult.value.forEach(m => contextMessages.push({ msg: m, order: 'before' }));
+        } else {
+            logger.warn('前メッセージの取得に失敗', { messageId, error: beforeMessagesResult.reason?.message });
         }
         
-        const afterMessages = await channel.messages.fetch({ limit: afterLimit, after: messageId });
-        afterMessages.forEach(m => contextMessages.push({ msg: m, order: 'after' }));
+        // targetMsgの処理
+        if (targetMsgResult.status === 'fulfilled' && targetMsgResult.value) {
+            contextMessages.push({ msg: targetMsgResult.value, order: 'target' });
+        }
+        
+        // afterMessagesの処理
+        if (afterMessagesResult.status === 'fulfilled') {
+            afterMessagesResult.value.forEach(m => contextMessages.push({ msg: m, order: 'after' }));
+        } else {
+            logger.warn('後メッセージの取得に失敗', { messageId, error: afterMessagesResult.reason?.message });
+        }
         
         contextMessages.sort((a, b) => a.msg.createdTimestamp - b.msg.createdTimestamp);
         

@@ -19,8 +19,17 @@ async function checkSpamAndLongMessage(message, client) {
     const channelId = message.channel.id;
     const messageLength = message.content.length;
     
-    db.prepare('INSERT INTO message_tracking (user_id, channel_id, timestamp, message_length) VALUES (?, ?, ?, ?)')
-        .run(userId, channelId, now, messageLength);
+    try {
+        db.prepare('INSERT INTO message_tracking (user_id, channel_id, timestamp, message_length) VALUES (?, ?, ?, ?)')
+            .run(userId, channelId, now, messageLength);
+    } catch (error) {
+        logger.error('メッセージ追跡記録エラー', {
+            userId,
+            channelId,
+            error: error.message,
+            stack: error.stack
+        });
+    }
     
     const timeWindow = now - CONFIG.SPAM_TIME_WINDOW;
     const recentMessages = db.prepare(`
@@ -183,7 +192,15 @@ async function checkSpamAndLongMessage(message, client) {
     }
     
     const oneHourAgo = now - (60 * 60 * 1000);
-    db.prepare('DELETE FROM message_tracking WHERE timestamp < ?').run(oneHourAgo);
+    try {
+        db.prepare('DELETE FROM message_tracking WHERE timestamp < ?').run(oneHourAgo);
+    } catch (error) {
+        logger.error('メッセージ追跡削除エラー', {
+            oneHourAgo,
+            error: error.message,
+            stack: error.stack
+        });
+    }
 }
 
 // モデレーションロジック (AIハイブリッド)
@@ -334,22 +351,22 @@ async function executePunishment(message, type, word, reason, context, aiResult,
                 aiResult: aiResult
             });
 
-        message.channel.send({ embeds: [embed] }).catch(error => {
-            logger.error('警告メッセージ送信エラー（executePunishment）', { 
-                userId: message.author.id,
-                error: error.message 
+            message.channel.send({ embeds: [embed] }).catch(error => {
+                logger.error('警告メッセージ送信エラー（executePunishment）', { 
+                    userId: message.author.id,
+                    error: error.message 
+                });
             });
-        });
-    } else {
-        try { 
-            await message.delete(); 
-        } catch (deleteError) {
-            logger.warn('メッセージ削除エラー（executePunishment）', { 
-                messageId: message.id,
-                error: deleteError.message 
-            });
-        }
-        
+        } else {
+            try { 
+                await message.delete(); 
+            } catch (deleteError) {
+                logger.warn('メッセージ削除エラー（executePunishment）', { 
+                    messageId: message.id,
+                    error: deleteError.message 
+                });
+            }
+            
             const embed = createWarningDeleteEmbed({
                 user: message.author,
                 reason: reason,
@@ -360,24 +377,24 @@ async function executePunishment(message, type, word, reason, context, aiResult,
                 aiResult: aiResult
             });
 
-        message.channel.send({ embeds: [embed] }).catch(error => {
-            logger.error('削除通知メッセージ送信エラー（executePunishment）', { 
-                userId: message.author.id,
-                error: error.message 
-            });
-        });
-        }
-
-        if (warnCount >= CONFIG.WARN_THRESHOLD) {
-        const alertCh = message.guild.channels.cache.get(CONFIG.ALERT_CHANNEL_ID);
-        if (alertCh) {
-            alertCh.send(`🚨 **要レビュー**: ${message.author} が警告閾値に達しました。`).catch(error => {
-                logger.error('アラートチャンネル送信エラー', { 
+            message.channel.send({ embeds: [embed] }).catch(error => {
+                logger.error('削除通知メッセージ送信エラー（executePunishment）', { 
+                    userId: message.author.id,
                     error: error.message 
                 });
             });
         }
-    }
+
+        if (warnCount >= CONFIG.WARN_THRESHOLD) {
+            const alertCh = message.guild.channels.cache.get(CONFIG.ALERT_CHANNEL_ID);
+            if (alertCh) {
+                alertCh.send(`🚨 **要レビュー**: ${message.author} が警告閾値に達しました。`).catch(error => {
+                    logger.error('アラートチャンネル送信エラー', { 
+                        error: error.message 
+                    });
+                });
+            }
+        }
     } catch (error) {
         logger.error('処罰実行エラー', { 
             userId: message.author.id,

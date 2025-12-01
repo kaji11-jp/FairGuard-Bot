@@ -1,4 +1,5 @@
 const db = require('../database');
+const { checkDatabaseHealth } = require('../database');
 const { pendingWarnsCache } = require('./cache');
 
 /**
@@ -25,7 +26,7 @@ function checkHealth() {
             pendingWarnsMaxSize: 'unlimited'
         },
         database: {
-            connected: db.open,
+            connected: checkDatabaseHealth(),
             inTransaction: db.inTransaction || false
         },
         node: {
