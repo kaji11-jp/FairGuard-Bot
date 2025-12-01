@@ -1,9 +1,16 @@
 const { isAdminUser } = require('../utils/permissions');
 const { removeOpenTicket } = require('../utils/tickets');
 const { executeManualWarn } = require('./commands');
+const { handleSlashCommand } = require('./slashCommands');
 const db = require('../database');
 
 async function handleInteraction(interaction) {
+    // スラッシュコマンド処理
+    if (interaction.isChatInputCommand()) {
+        return handleSlashCommand(interaction);
+    }
+    
+    // ボタンインタラクション処理
     if (!interaction.isButton()) return;
     
     // チケット閉鎖

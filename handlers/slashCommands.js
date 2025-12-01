@@ -7,132 +7,75 @@ const { getOpenTicket, setOpenTicket, removeOpenTicket } = require('../utils/tic
 const { addWarning, reduceWarning, getActiveWarningCount } = require('../services/warnings');
 const { fetchContext, callGemini, checkWarnAbuse } = require('../services/ai');
 const { blacklistCache, graylistCache, loadBannedWords } = require('../utils/bannedWords');
+const { executeManualWarn } = require('./commands');
 const db = require('../database');
 
-// 手動警告の実行（messageまたはinteractionに対応）
-async function executeManualWarn(source, target, reason, content, context, messageId, moderatorId = null) {
-    // messageまたはinteractionのどちらかを判定
-    // interactionにはisChatInputCommand()メソッドがある
-    const isInteraction = source.isChatInputCommand && typeof source.isChatInputCommand === 'function';
-    const guild = source.guild;
-    const channel = source.channel;
-    const author = isInteraction ? source.user : source.author;
-    const member = source.member;
+async function handleSlashCommand(interaction) {
+    const commandName = interaction.commandName;
+    const isAdmin = isAdminUser(interaction.member);
     
-    const actualModeratorId = moderatorId || author.id;
-    const actualModerator = moderatorId ? await guild.members.fetch(moderatorId).catch(() => null) : member;
-    
-    const logId = Date.now().toString(36);
-    
-    saveModLog({
-        id: logId, 
-        type: 'WARN_MANUAL', 
-        userId: target.id, 
-        moderatorId: actualModeratorId, 
-        timestamp: Date.now(), 
-        reason: reason, 
-        content: content, 
-        contextData: context, 
-        aiAnalysis: null
-    });
-    
-    const count = addWarning(target.id, reason, actualModeratorId, logId);
-    
-    const embed = new EmbedBuilder()
-        .setColor('#ff9900')
-        .setTitle('⚠️ 手動警告')
-        .setDescription(`${target} に警告が発行されました`)
-        .addFields(
-            { name: '警告回数', value: `${count}/${CONFIG.WARN_THRESHOLD}`, inline: true },
-            { name: '理由', value: reason, inline: true },
-            { name: '警告ID', value: `\`${logId}\``, inline: false }
-        );
-    
-    if (messageId) {
-        embed.addFields({ name: '対象メッセージ', value: `[メッセージへジャンプ](https://discord.com/channels/${guild.id}/${channel.id}/${messageId})`, inline: false });
-    }
-    
-    // interactionの場合は既にreply済みなので、followUpまたはchannel.sendを使用
-    if (isInteraction) {
-        await channel.send({ embeds: [embed] });
-    } else {
-        await channel.send({ embeds: [embed] });
-    }
-    
-    if (CONFIG.ALERT_CHANNEL_ID && CONFIG.ALERT_CHANNEL_ID.length > 0) {
-        const alertCh = guild.channels.cache.get(CONFIG.ALERT_CHANNEL_ID);
-        if (alertCh) {
-            const logEmbed = new EmbedBuilder()
-                .setColor('#ff9900')
-                .setTitle('📝 手動警告ログ')
-                .addFields(
-                    { name: '警告者', value: `${actualModerator?.user || actualModeratorId} (${actualModeratorId})`, inline: true },
-                    { name: '対象', value: `${target} (${target.id})`, inline: true },
-                    { name: '理由', value: reason, inline: false },
-                    { name: '警告ID', value: `\`${logId}\``, inline: false }
-                )
-                .setTimestamp();
-            alertCh.send({ embeds: [logEmbed] });
-        }
-    }
-}
-
-async function handleCommand(message) {
-    if (!message.guild || message.guild.id !== CONFIG.ALLOWED_GUILD_ID) {
-        saveCommandLog(message.author.id, 'UNKNOWN', [], null, message.channel.id, false);
-        return;
-    }
-    
-    if (!isAdminUser(message.member)) {
-        if (!checkRateLimit(message.author.id)) {
-            saveCommandLog(message.author.id, 'RATE_LIMIT', [], message.guild.id, message.channel.id, false);
-            return message.reply('⏱️ コマンドの実行頻度が高すぎます。しばらく待ってから再試行してください。');
+    // レート制限チェック（管理者は除外）
+    if (!isAdmin) {
+        if (!checkRateLimit(interaction.user.id)) {
+            saveCommandLog(interaction.user.id, 'RATE_LIMIT', [], interaction.guild.id, interaction.channel.id, false);
+            return interaction.reply({ content: '⏱️ コマンドの実行頻度が高すぎます。しばらく待ってから再試行してください。', ephemeral: true });
         }
     }
     
-    const args = message.content.slice(CONFIG.PREFIX.length).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
-    const isAdmin = isAdminUser(message.member);
-    
+    // コマンドログ保存
     try {
-        saveCommandLog(message.author.id, command, args, message.guild.id, message.channel.id, true);
+        const options = interaction.options.data.map(opt => {
+            if (opt.user) return opt.user.id;
+            if (opt.value) return opt.value;
+            return null;
+        }).filter(v => v !== null);
+        saveCommandLog(interaction.user.id, commandName, options, interaction.guild.id, interaction.channel.id, true);
     } catch (e) {
         console.error('Command log save error:', e);
     }
-
-    if (command === 'help') {
+    
+    // helpコマンド
+    if (commandName === 'help') {
         const embed = new EmbedBuilder()
             .setColor('#0099ff')
             .setTitle('📜 コマンド一覧')
-            .addFields({ name: '👤 ユーザー用', value: `\`${CONFIG.PREFIX}appeal <ID> <理由>\`: 異議申し立て\n\`${CONFIG.PREFIX}ticket open\`: 問い合わせ作成` });
+            .addFields({ name: '👤 ユーザー用', value: '`/appeal`: 異議申し立て\n`/ticket open`: 問い合わせ作成' });
 
         if (isAdmin) {
             embed.addFields({ 
                 name: '👮 管理者用', 
-                value: `\`${CONFIG.PREFIX}warn <@user> [理由]\`: 手動警告\n\`${CONFIG.PREFIX}unwarn <ユーザーID> [数]\`: 警告減\n\`${CONFIG.PREFIX}addword <単語> [black/gray]\`: ワード追加\n\`${CONFIG.PREFIX}removeword <単語>\`: ワード削除\n\`${CONFIG.PREFIX}listword\`: 一覧表示\n\`${CONFIG.PREFIX}timeout_user <ユーザーID>\`: タイムアウト\n\`${CONFIG.PREFIX}cmdlog [件数]\`: コマンド履歴\n\`${CONFIG.PREFIX}warnlog [ユーザーID] [件数]\`: 警告履歴\n\`${CONFIG.PREFIX}ticket close\`: チケット終了` 
+                value: '`/warn`: 手動警告\n`/unwarn`: 警告減\n`/addword`: ワード追加\n`/removeword`: ワード削除\n`/listword`: 一覧表示\n`/timeout`: タイムアウト\n`/cmdlog`: コマンド履歴\n`/warnlog`: 警告履歴\n`/ticket close`: チケット終了' 
             });
             embed.setColor('#ff9900');
         }
-        return message.reply({ embeds: [embed] });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
     }
-
-    if (command === 'appeal') {
-        const [logId, ...reasonParts] = args;
-        const reason = reasonParts.join(' ');
-        if (!logId || !reason) return message.reply('❌ 理由を入力してください: `!appeal <ID> <理由>`');
+    
+    // appealコマンド
+    if (commandName === 'appeal') {
+        const logId = interaction.options.getString('log_id');
+        const reason = interaction.options.getString('reason');
+        
+        if (!logId || !reason) {
+            return interaction.reply({ content: '❌ 理由を入力してください', ephemeral: true });
+        }
 
         const log = db.prepare('SELECT * FROM mod_logs WHERE id = ?').get(logId);
-        if (!log || log.user_id !== message.author.id) return message.reply('❌ データなし');
-        if (log.is_resolved) return message.reply('✅ 既に解決済みです');
+        if (!log || log.user_id !== interaction.user.id) {
+            return interaction.reply({ content: '❌ データなし', ephemeral: true });
+        }
+        if (log.is_resolved) {
+            return interaction.reply({ content: '✅ 既に解決済みです', ephemeral: true });
+        }
         
         const APPEAL_DEADLINE_MS = 3 * 24 * 60 * 60 * 1000; 
         const timeSincePunishment = Date.now() - log.timestamp;
         if (timeSincePunishment > APPEAL_DEADLINE_MS) {
             const daysPassed = Math.floor(timeSincePunishment / (24 * 60 * 60 * 1000));
-            return message.reply(`❌ 異議申し立ての期限（3日以内）を過ぎています。処罰から${daysPassed}日経過しています。`);
+            return interaction.reply({ content: `❌ 異議申し立ての期限（3日以内）を過ぎています。処罰から${daysPassed}日経過しています。`, ephemeral: true });
         }
 
-        message.channel.sendTyping();
+        await interaction.deferReply();
 
         const prompt = `
 あなたは公平な裁判官AIです。ユーザーの異議を審査してください。
@@ -153,11 +96,13 @@ async function handleCommand(message) {
         `;
 
         const result = await callGemini(prompt);
-        if (!result) return message.reply('❌ AIエラー');
+        if (!result) {
+            return interaction.editReply({ content: '❌ AIエラー' });
+        }
 
         const isAccepted = result.status === 'ACCEPTED';
         if (isAccepted) {
-            reduceWarning(message.author.id, 1);
+            reduceWarning(interaction.user.id, 1);
             db.prepare('UPDATE mod_logs SET is_resolved = 1 WHERE id = ?').run(logId);
         }
 
@@ -167,91 +112,102 @@ async function handleCommand(message) {
             .setDescription(result.reason)
             .setFooter({ text: CONFIG.GEMINI_CREDIT, iconURL: CONFIG.GEMINI_ICON });
         
-        message.reply({ embeds: [embed] });
-        return;
+        return interaction.editReply({ embeds: [embed] });
     }
-
-    if (command === 'ticket') {
-        if (args[0] === 'open') {
-            if (getOpenTicket(message.author.id)) return message.reply('❌ 既に開いています');
+    
+    // ticketコマンド
+    if (commandName === 'ticket') {
+        const subcommand = interaction.options.getSubcommand();
+        
+        if (subcommand === 'open') {
+            if (getOpenTicket(interaction.user.id)) {
+                return interaction.reply({ content: '❌ 既に開いています', ephemeral: true });
+            }
             
             if (!CONFIG.TICKET_CATEGORY_ID || CONFIG.TICKET_CATEGORY_ID.length === 0) {
-                 return message.reply('❌ チケットカテゴリーIDが設定されていません。管理者に連絡してください。');
+                return interaction.reply({ content: '❌ チケットカテゴリーIDが設定されていません。管理者に連絡してください。', ephemeral: true });
             }
 
-            const ch = await message.guild.channels.create({
-                name: `ticket-${message.author.username}`,
+            await interaction.deferReply();
+            
+            const ch = await interaction.guild.channels.create({
+                name: `ticket-${interaction.user.username}`,
                 type: ChannelType.GuildText,
                 parent: CONFIG.TICKET_CATEGORY_ID,
                 permissionOverwrites: [
-                    { id: message.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-                    { id: message.author.id, allow: [PermissionsBitField.Flags.ViewChannel] },
+                    { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                    { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel] },
                     { id: CONFIG.ADMIN_ROLE_ID, allow: [PermissionsBitField.Flags.ViewChannel] }
                 ]
             });
-            setOpenTicket(message.author.id, ch.id);
+            setOpenTicket(interaction.user.id, ch.id);
             const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_ticket').setLabel('Close').setStyle(ButtonStyle.Danger));
-            ch.send({ content: `${message.author} お問い合わせをどうぞ`, components: [row] });
-            message.reply(`✅ チケット作成: ${ch}`);
+            ch.send({ content: `${interaction.user} お問い合わせをどうぞ`, components: [row] });
+            return interaction.editReply({ content: `✅ チケット作成: ${ch}` });
         }
-        else if (args[0] === 'close' && isAdmin) {
-            message.channel.delete().catch(()=>{});
-        }
-        return;
-    }
-
-    // --- Admin Commands ---
-    if (!isAdmin) return;
-
-    if (command === 'warn') {
-        const target = message.mentions.users.first();
-        const reason = args.slice(1).join(' ') || '手動警告';
-        if (!target) return message.reply('❌ ユーザー指定必須: `!warn <@user> [理由]`');
         
-        let context = ''; 
+        if (subcommand === 'close' && isAdmin) {
+            await interaction.deferReply();
+            await interaction.channel.delete().catch(() => {});
+            return;
+        }
+    }
+    
+    // 管理者専用コマンド
+    if (!isAdmin) {
+        return interaction.reply({ content: '❌ このコマンドは管理者専用です', ephemeral: true });
+    }
+    
+    // warnコマンド
+    if (commandName === 'warn') {
+        const target = interaction.options.getUser('user');
+        const reason = interaction.options.getString('reason') || '手動警告';
+        const messageId = interaction.options.getString('message_id');
+        
+        await interaction.deferReply();
+        
+        let context = '';
         let content = '手動警告';
         let targetMessageId = null;
         
-        if (message.reference) {
+        if (messageId) {
             try {
-                const replyMsg = await message.channel.messages.fetch(message.reference.messageId);
+                const replyMsg = await interaction.channel.messages.fetch(messageId);
                 if (replyMsg.author.id !== target.id) {
-                    return message.reply('❌ リプライ先のメッセージが対象ユーザーのものではありません');
+                    return interaction.editReply({ content: '❌ リプライ先のメッセージが対象ユーザーのものではありません' });
                 }
                 content = replyMsg.content;
                 targetMessageId = replyMsg.id;
-                context = await fetchContext(message.channel, replyMsg.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
+                context = await fetchContext(interaction.channel, replyMsg.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
             } catch (e) {
-                return message.reply('❌ メッセージの取得に失敗しました');
+                return interaction.editReply({ content: '❌ メッセージの取得に失敗しました' });
             }
         } else {
             try {
-                const messages = await message.channel.messages.fetch({ limit: 50 });
+                const messages = await interaction.channel.messages.fetch({ limit: 50 });
                 const targetMessages = messages.filter(m => m.author.id === target.id && !m.author.bot);
                 
                 if (targetMessages.size === 0) {
-                    return message.reply('❌ 対象ユーザーのメッセージが見つかりませんでした');
+                    return interaction.editReply({ content: '❌ 対象ユーザーのメッセージが見つかりませんでした' });
                 }
                 
                 const latestMsg = targetMessages.first();
                 content = latestMsg.content;
                 targetMessageId = latestMsg.id;
-                context = await fetchContext(message.channel, latestMsg.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
+                context = await fetchContext(interaction.channel, latestMsg.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
             } catch (e) {
-                return message.reply('❌ メッセージの取得に失敗しました');
+                return interaction.editReply({ content: '❌ メッセージの取得に失敗しました' });
             }
         }
-        
-        message.channel.sendTyping();
         
         const oneHourAgo = Date.now() - (60 * 60 * 1000);
         const recentWarns = db.prepare(`
             SELECT COUNT(*) as count, MAX(timestamp) as last_warn 
             FROM mod_logs 
             WHERE user_id = ? AND type = 'WARN_MANUAL' AND moderator_id = ? AND timestamp > ?
-        `).get(target.id, message.author.id, oneHourAgo);
+        `).get(target.id, interaction.user.id, oneHourAgo);
         
-        const abuseCheck = await checkWarnAbuse(message.author.id, target.id, reason, context, content);
+        const abuseCheck = await checkWarnAbuse(interaction.user.id, target.id, reason, context, content);
         
         if (abuseCheck && abuseCheck.is_abuse) {
             const embed = new EmbedBuilder()
@@ -288,11 +244,11 @@ async function handleCommand(message) {
                         .setStyle(ButtonStyle.Danger)
                 );
             
-            const confirmMsg = await message.reply({ embeds: [embed], components: [row] });
+            const confirmMsg = await interaction.editReply({ embeds: [embed], components: [row] });
             
             const pendingWarnData = {
                 targetId: target.id,
-                moderatorId: message.author.id,
+                moderatorId: interaction.user.id,
                 reason: reason,
                 content: content,
                 context: context,
@@ -313,18 +269,24 @@ async function handleCommand(message) {
             return;
         }
         
-        await executeManualWarn(message, target, reason, content, context, targetMessageId);
+        await executeManualWarn(interaction, target, reason, content, context, targetMessageId);
+        const count = getActiveWarningCount(target.id);
+        return interaction.editReply({ content: `✅ 警告を発行しました (警告回数: ${count}/${CONFIG.WARN_THRESHOLD})` });
     }
-
-    if (command === 'unwarn') {
-        const userId = args[0];
-        if (!userId) return message.reply('❌ ユーザーIDを指定してください: `!unwarn <ユーザーID> [減らす数]`');
+    
+    // unwarnコマンド
+    if (commandName === 'unwarn') {
+        const userId = interaction.options.getString('user_id');
+        const amount = interaction.options.getInteger('amount') || 1;
         
-        const target = await message.guild.members.fetch(userId).catch(() => null);
-        if (!target) return message.reply('❌ ユーザーが見つかりません');
+        if (amount < 1) {
+            return interaction.reply({ content: '❌ 減らす数は1以上である必要があります', ephemeral: true });
+        }
         
-        const amount = parseInt(args[1]) || 1;
-        if (amount < 1) return message.reply('❌ 減らす数は1以上である必要があります');
+        const target = await interaction.guild.members.fetch(userId).catch(() => null);
+        if (!target) {
+            return interaction.reply({ content: '❌ ユーザーが見つかりません', ephemeral: true });
+        }
         
         const newCount = reduceWarning(userId, amount);
         
@@ -333,7 +295,7 @@ async function handleCommand(message) {
             id: logId, 
             type: 'UNWARN', 
             userId: userId, 
-            moderatorId: message.author.id, 
+            moderatorId: interaction.user.id, 
             timestamp: Date.now(), 
             reason: `${amount}個の警告を削減`, 
             content: '', 
@@ -341,108 +303,117 @@ async function handleCommand(message) {
             aiAnalysis: null
         });
         
-        message.reply(`✅ ${target.user} の警告を${amount}個削減しました (現在: ${newCount})`);
+        return interaction.reply({ content: `✅ ${target.user} の警告を${amount}個削減しました (現在: ${newCount})`, ephemeral: true });
     }
-
-    if (command === 'listword') {
+    
+    // listwordコマンド
+    if (commandName === 'listword') {
         const blackList = Array.from(blacklistCache).join(', ') || 'なし';
         const grayList = Array.from(graylistCache).join(', ') || 'なし';
         const embed = new EmbedBuilder().setColor('#0099ff').setTitle('📜 禁止ワード一覧')
             .addFields({ name: '🚫 即死 (Blacklist)', value: blackList }, { name: '⚡ AI審議 (Graylist)', value: grayList });
-        message.reply({ embeds: [embed] });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
     }
-
-    if (command === 'addword') {
-        const word = args[0];
-        const typeArg = args[1]?.toLowerCase();
-        if (!word) return message.reply('❌ `!addword <単語> [black/gray]`');
+    
+    // addwordコマンド
+    if (commandName === 'addword') {
+        const word = interaction.options.getString('word');
+        const typeArg = interaction.options.getString('type') || 'black';
         
-        if (word.length > 100) return message.reply('❌ 単語が長すぎます（最大100文字）');
+        if (word.length > 100) {
+            return interaction.reply({ content: '❌ 単語が長すぎます（最大100文字）', ephemeral: true });
+        }
         
         const type = (typeArg === 'gray' || typeArg === 'g') ? 'GRAY' : 'BLACK';
         
         db.prepare('INSERT OR REPLACE INTO banned_words (word, type) VALUES (?, ?)').run(word.toLowerCase(), type);
         loadBannedWords();
-        message.reply(`✅ 追加: **${word}** (${type})`);
         
         const logId = Date.now().toString(36);
         saveModLog({
             id: logId, 
             type: 'ADDWORD', 
-            userId: message.author.id, 
-            moderatorId: message.author.id, 
+            userId: interaction.user.id, 
+            moderatorId: interaction.user.id, 
             timestamp: Date.now(), 
             reason: `単語追加: ${word} (${type})`, 
             content: word, 
             contextData: '', 
             aiAnalysis: null
         });
+        
+        return interaction.reply({ content: `✅ 追加: **${word}** (${type})`, ephemeral: true });
     }
-
-    if (command === 'removeword') {
-        const word = args[0];
-        if (!word) return message.reply('❌ `!removeword <単語>`');
+    
+    // removewordコマンド
+    if (commandName === 'removeword') {
+        const word = interaction.options.getString('word');
         
         const result = db.prepare('DELETE FROM banned_words WHERE word = ?').run(word.toLowerCase());
         if (result.changes === 0) {
-            return message.reply(`❌ 単語「${word}」が見つかりませんでした`);
+            return interaction.reply({ content: `❌ 単語「${word}」が見つかりませんでした`, ephemeral: true });
         }
         
         loadBannedWords();
-        message.reply(`✅ 削除: ${word}`);
         
         const logId = Date.now().toString(36);
         saveModLog({
             id: logId, 
             type: 'REMOVEWORD', 
-            userId: message.author.id, 
-            moderatorId: message.author.id, 
+            userId: interaction.user.id, 
+            moderatorId: interaction.user.id, 
             timestamp: Date.now(), 
             reason: `単語削除: ${word}`, 
             content: word, 
             contextData: '', 
             aiAnalysis: null
         });
-    }
-
-    if (command === 'timeout_user') {
-        const userId = args[0];
-        if (!userId) return message.reply('❌ ユーザーIDを指定してください: `!timeout_user <ユーザーID>`');
         
-        const mem = await message.guild.members.fetch(userId).catch(() => null);
-        if (!mem) return message.reply('❌ ユーザーが見つかりません');
+        return interaction.reply({ content: `✅ 削除: ${word}`, ephemeral: true });
+    }
+    
+    // timeoutコマンド
+    if (commandName === 'timeout') {
+        const userId = interaction.options.getString('user_id');
+        
+        const mem = await interaction.guild.members.fetch(userId).catch(() => null);
+        if (!mem) {
+            return interaction.reply({ content: '❌ ユーザーが見つかりません', ephemeral: true });
+        }
         
         if (isAdminUser(mem)) {
-            return message.reply('❌ 管理者をタイムアウトすることはできません');
+            return interaction.reply({ content: '❌ 管理者をタイムアウトすることはできません', ephemeral: true });
         }
         
         try {
-            await mem.timeout(CONFIG.TIMEOUT_DURATION, `手動タイムアウト by ${message.author.tag}`);
-            message.reply(`🔨 ${mem.user} をタイムアウトしました (${CONFIG.TIMEOUT_DURATION / 1000 / 60}分)`);
+            await mem.timeout(CONFIG.TIMEOUT_DURATION, `手動タイムアウト by ${interaction.user.tag}`);
             
             const logId = Date.now().toString(36);
             saveModLog({
                 id: logId, 
                 type: 'TIMEOUT', 
                 userId: userId, 
-                moderatorId: message.author.id, 
+                moderatorId: interaction.user.id, 
                 timestamp: Date.now(), 
                 reason: '手動タイムアウト', 
                 content: '', 
                 contextData: '', 
                 aiAnalysis: null
             });
+            
+            return interaction.reply({ content: `🔨 ${mem.user} をタイムアウトしました (${CONFIG.TIMEOUT_DURATION / 1000 / 60}分)`, ephemeral: true });
         } catch (e) {
-            message.reply(`❌ タイムアウトの実行に失敗しました: ${e.message}`);
+            return interaction.reply({ content: `❌ タイムアウトの実行に失敗しました: ${e.message}`, ephemeral: true });
         }
     }
     
-    if (command === 'cmdlog') {
-        const limit = Math.min(parseInt(args[0]) || 10, 50); 
-        const logs = db.prepare('SELECT * FROM command_logs WHERE guild_id = ? ORDER BY timestamp DESC LIMIT ?').all(message.guild.id, limit);
+    // cmdlogコマンド
+    if (commandName === 'cmdlog') {
+        const limit = Math.min(interaction.options.getInteger('limit') || 10, 50);
+        const logs = db.prepare('SELECT * FROM command_logs WHERE guild_id = ? ORDER BY timestamp DESC LIMIT ?').all(interaction.guild.id, limit);
         
         if (logs.length === 0) {
-            return message.reply('📝 コマンド履歴がありません');
+            return interaction.reply({ content: '📝 コマンド履歴がありません', ephemeral: true });
         }
         
         const warnLogs = logs.filter(log => log.command === 'warn' && log.success === 1);
@@ -458,7 +429,7 @@ async function handleCommand(message) {
         });
         
         const logText = logs.map(log => {
-            const user = message.guild.members.cache.get(log.user_id);
+            const user = interaction.guild.members.cache.get(log.user_id);
             const date = new Date(log.timestamp).toLocaleString('ja-JP', { 
                 month: '2-digit', 
                 day: '2-digit', 
@@ -468,7 +439,7 @@ async function handleCommand(message) {
             });
             const args = JSON.parse(log.args || '[]');
             const argsText = args.length > 0 ? args.join(' ') : '';
-            const commandText = argsText ? `${CONFIG.PREFIX}${log.command} ${argsText}` : `${CONFIG.PREFIX}${log.command}`;
+            const commandText = argsText ? `/${log.command} ${argsText}` : `/${log.command}`;
             return `\`${date}\` **${user?.user?.tag || log.user_id}**: \`${commandText}\` ${log.success ? '✅' : '❌'}`;
         }).join('\n');
         
@@ -481,7 +452,7 @@ async function handleCommand(message) {
         const frequentWarns = Object.entries(warnFrequency).filter(([_, data]) => data.count >= 2);
         if (frequentWarns.length > 0) {
             const warnText = frequentWarns.map(([targetId, data]) => {
-                const target = message.guild.members.cache.get(targetId);
+                const target = interaction.guild.members.cache.get(targetId);
                 const timeDiff = Math.max(...data.times) - Math.min(...data.times);
                 const minutes = Math.floor(timeDiff / 60000);
                 return `**${target?.user?.tag || targetId}**: ${data.count}回 (${minutes}分以内)`;
@@ -494,12 +465,13 @@ async function handleCommand(message) {
             });
         }
         
-        message.reply({ embeds: [embed] });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
     }
     
-    if (command === 'warnlog') {
-        const targetId = args[0]?.replace(/[<@!>]/g, '');
-        const limit = Math.min(parseInt(args[1]) || 10, 50);
+    // warnlogコマンド
+    if (commandName === 'warnlog') {
+        const targetId = interaction.options.getString('user_id');
+        const limit = Math.min(interaction.options.getInteger('limit') || 10, 50);
         
         let logs;
         if (targetId) {
@@ -511,7 +483,7 @@ async function handleCommand(message) {
         }
         
         if (logs.length === 0) {
-            return message.reply('📝 警告履歴がありません');
+            return interaction.reply({ content: '📝 警告履歴がありません', ephemeral: true });
         }
         
         const logText = logs.map(log => {
@@ -521,8 +493,8 @@ async function handleCommand(message) {
                 hour: '2-digit', 
                 minute: '2-digit' 
             });
-            const moderator = message.guild.members.cache.get(log.moderator_id);
-            const target = message.guild.members.cache.get(log.user_id);
+            const moderator = interaction.guild.members.cache.get(log.moderator_id);
+            const target = interaction.guild.members.cache.get(log.user_id);
             return `\`${date}\` ${target?.user?.tag || log.user_id} ← ${moderator?.user?.tag || log.moderator_id}\n理由: ${log.reason}\nID: \`${log.id}\``;
         }).join('\n\n');
         
@@ -532,9 +504,9 @@ async function handleCommand(message) {
             .setDescription(logText.length > 4000 ? logText.substring(0, 4000) + '...' : logText)
             .setFooter({ text: targetId ? `対象: ${targetId}` : `最新${logs.length}件` });
         
-        message.reply({ embeds: [embed] });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 }
 
-module.exports = { handleCommand, executeManualWarn };
+module.exports = { handleSlashCommand };
 
