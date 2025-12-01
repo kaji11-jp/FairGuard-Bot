@@ -1,0 +1,57 @@
+const { isAdminUser } = require('../utils/permissions');
+const { removeOpenTicket } = require('../utils/tickets');
+const { executeManualWarn } = require('./commands');
+const db = require('../database');
+
+async function handleInteraction(interaction) {
+    if (!interaction.isButton()) return;
+    
+    // チケット閉鎖
+    if (interaction.customId === 'close_ticket') {
+        const uid = db.prepare('SELECT user_id FROM tickets WHERE channel_id = ?').get(interaction.channel.id)?.user_id;
+        interaction.reply('Closing...');
+        setTimeout(() => {
+            if(uid) removeOpenTicket(uid);
+            interaction.channel.delete().catch(()=>{});
+        }, 2000);
+        return;
+    }
+    
+    // 警告確認ボタン
+    if (interaction.customId.startsWith('warn_confirm_')) {
+        if (!global.pendingWarns || !global.pendingWarns.has(interaction.message.id) || !interaction.message.author) { 
+            return interaction.reply({ content: '❌ この警告リクエストは期限切れです', ephemeral: true });
+        }
+        
+        const warnData = global.pendingWarns.get(interaction.message.id);
+        
+        if (!isAdminUser(interaction.member)) {
+            return interaction.reply({ content: '❌ あなたにはこの操作を実行する権限がありません', ephemeral: true });
+        }
+        
+        const target = await interaction.guild.members.fetch(warnData.targetId).catch(() => null);
+        if (!target) {
+            return interaction.reply({ content: '❌ 対象ユーザーが見つかりません', ephemeral: true });
+        }
+        
+        await executeManualWarn(interaction.message, target.user, warnData.reason, warnData.content, warnData.context, warnData.messageId, warnData.moderatorId);
+        global.pendingWarns.delete(interaction.message.id);
+        
+        await interaction.update({ content: '✅ 警告を実行しました', components: [], embeds: [] });
+        return;
+    }
+    
+    // 警告キャンセルボタン
+    if (interaction.customId.startsWith('warn_cancel_')) {
+        if (!global.pendingWarns || !global.pendingWarns.has(interaction.message.id)) {
+            return interaction.reply({ content: '❌ この警告リクエストは期限切れです', ephemeral: true });
+        }
+        
+        global.pendingWarns.delete(interaction.message.id);
+        await interaction.update({ content: '❌ 警告がキャンセルされました', components: [], embeds: [] });
+        return;
+    }
+}
+
+module.exports = { handleInteraction };
+

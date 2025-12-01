@@ -1,0 +1,32 @@
+const Database = require('better-sqlite3');
+
+// データベース初期化
+const db = new Database('bot_data.sqlite');
+
+// テーブル作成
+db.exec(`
+    CREATE TABLE IF NOT EXISTS warnings (user_id TEXT PRIMARY KEY, count INTEGER DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS warning_records (
+        id TEXT PRIMARY KEY, user_id TEXT, timestamp INTEGER, expires_at INTEGER, 
+        reason TEXT, moderator_id TEXT, log_id TEXT
+    );
+    CREATE TABLE IF NOT EXISTS mod_logs (
+        id TEXT PRIMARY KEY, type TEXT, user_id TEXT, moderator_id TEXT, 
+        timestamp INTEGER, reason TEXT, content TEXT, context_data TEXT, 
+        ai_analysis TEXT, is_resolved INTEGER DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS tickets (user_id TEXT PRIMARY KEY, channel_id TEXT);
+    CREATE TABLE IF NOT EXISTS banned_words (word TEXT PRIMARY KEY, type TEXT DEFAULT 'BLACK');
+    CREATE TABLE IF NOT EXISTS command_rate_limits (user_id TEXT PRIMARY KEY, last_command_time INTEGER, command_count INTEGER DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS command_logs (
+        id TEXT PRIMARY KEY, user_id TEXT, command TEXT, args TEXT, 
+        timestamp INTEGER, guild_id TEXT, channel_id TEXT, success INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS message_tracking (
+        user_id TEXT, channel_id TEXT, timestamp INTEGER, message_length INTEGER,
+        PRIMARY KEY (user_id, channel_id, timestamp)
+    );
+`);
+
+module.exports = db;
+

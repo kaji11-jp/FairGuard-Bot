@@ -1,0 +1,527 @@
+const { EmbedBuilder, ChannelType, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const CONFIG = require('../config');
+const { isAdminUser } = require('../utils/permissions');
+const { checkRateLimit } = require('../utils/rateLimit');
+const { saveCommandLog, saveModLog } = require('../utils/logs');
+const { getOpenTicket, setOpenTicket, removeOpenTicket } = require('../utils/tickets');
+const { addWarning, reduceWarning, getActiveWarningCount } = require('../services/warnings');
+const { fetchContext, callGemini, checkWarnAbuse } = require('../services/ai');
+const { blacklistCache, graylistCache, loadBannedWords } = require('../utils/bannedWords');
+const db = require('../database');
+
+// 手動警告の実行
+async function executeManualWarn(commandMessage, target, reason, content, context, messageId, moderatorId = null) {
+    const actualModeratorId = moderatorId || commandMessage.author.id;
+    const actualModerator = moderatorId ? await commandMessage.guild.members.fetch(moderatorId).catch(() => null) : commandMessage.member;
+    
+    const logId = Date.now().toString(36);
+    
+    saveModLog({
+        id: logId, 
+        type: 'WARN_MANUAL', 
+        userId: target.id, 
+        moderatorId: actualModeratorId, 
+        timestamp: Date.now(), 
+        reason: reason, 
+        content: content, 
+        contextData: context, 
+        aiAnalysis: null
+    });
+    
+    const count = addWarning(target.id, reason, actualModeratorId, logId);
+    
+    const embed = new EmbedBuilder()
+        .setColor('#ff9900')
+        .setTitle('⚠️ 手動警告')
+        .setDescription(`${target} に警告が発行されました`)
+        .addFields(
+            { name: '警告回数', value: `${count}/${CONFIG.WARN_THRESHOLD}`, inline: true },
+            { name: '理由', value: reason, inline: true },
+            { name: '警告ID', value: `\`${logId}\``, inline: false }
+        );
+    
+    if (messageId) {
+        embed.addFields({ name: '対象メッセージ', value: `[メッセージへジャンプ](https://discord.com/channels/${commandMessage.guild.id}/${commandMessage.channel.id}/${messageId})`, inline: false });
+    }
+    
+    commandMessage.channel.send({ embeds: [embed] });
+    
+    if (CONFIG.ALERT_CHANNEL_ID && CONFIG.ALERT_CHANNEL_ID.length > 0) {
+        const alertCh = commandMessage.guild.channels.cache.get(CONFIG.ALERT_CHANNEL_ID);
+        if (alertCh) {
+            const logEmbed = new EmbedBuilder()
+                .setColor('#ff9900')
+                .setTitle('📝 手動警告ログ')
+                .addFields(
+                    { name: '警告者', value: `${actualModerator?.user || actualModeratorId} (${actualModeratorId})`, inline: true },
+                    { name: '対象', value: `${target} (${target.id})`, inline: true },
+                    { name: '理由', value: reason, inline: false },
+                    { name: '警告ID', value: `\`${logId}\``, inline: false }
+                )
+                .setTimestamp();
+            alertCh.send({ embeds: [logEmbed] });
+        }
+    }
+}
+
+async function handleCommand(message) {
+    if (!message.guild || message.guild.id !== CONFIG.ALLOWED_GUILD_ID) {
+        saveCommandLog(message.author.id, 'UNKNOWN', [], null, message.channel.id, false);
+        return;
+    }
+    
+    if (!isAdminUser(message.member)) {
+        if (!checkRateLimit(message.author.id)) {
+            saveCommandLog(message.author.id, 'RATE_LIMIT', [], message.guild.id, message.channel.id, false);
+            return message.reply('⏱️ コマンドの実行頻度が高すぎます。しばらく待ってから再試行してください。');
+        }
+    }
+    
+    const args = message.content.slice(CONFIG.PREFIX.length).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
+    const isAdmin = isAdminUser(message.member);
+    
+    try {
+        saveCommandLog(message.author.id, command, args, message.guild.id, message.channel.id, true);
+    } catch (e) {
+        console.error('Command log save error:', e);
+    }
+
+    if (command === 'help') {
+        const embed = new EmbedBuilder()
+            .setColor('#0099ff')
+            .setTitle('📜 コマンド一覧')
+            .addFields({ name: '👤 ユーザー用', value: `\`${CONFIG.PREFIX}appeal <ID> <理由>\`: 異議申し立て\n\`${CONFIG.PREFIX}ticket open\`: 問い合わせ作成` });
+
+        if (isAdmin) {
+            embed.addFields({ 
+                name: '👮 管理者用', 
+                value: `\`${CONFIG.PREFIX}warn <@user> [理由]\`: 手動警告\n\`${CONFIG.PREFIX}unwarn <ユーザーID> [数]\`: 警告減\n\`${CONFIG.PREFIX}addword <単語> [black/gray]\`: ワード追加\n\`${CONFIG.PREFIX}removeword <単語>\`: ワード削除\n\`${CONFIG.PREFIX}listword\`: 一覧表示\n\`${CONFIG.PREFIX}timeout_user <ユーザーID>\`: タイムアウト\n\`${CONFIG.PREFIX}cmdlog [件数]\`: コマンド履歴\n\`${CONFIG.PREFIX}warnlog [ユーザーID] [件数]\`: 警告履歴\n\`${CONFIG.PREFIX}ticket close\`: チケット終了` 
+            });
+            embed.setColor('#ff9900');
+        }
+        return message.reply({ embeds: [embed] });
+    }
+
+    if (command === 'appeal') {
+        const [logId, ...reasonParts] = args;
+        const reason = reasonParts.join(' ');
+        if (!logId || !reason) return message.reply('❌ 理由を入力してください: `!appeal <ID> <理由>`');
+
+        const log = db.prepare('SELECT * FROM mod_logs WHERE id = ?').get(logId);
+        if (!log || log.user_id !== message.author.id) return message.reply('❌ データなし');
+        if (log.is_resolved) return message.reply('✅ 既に解決済みです');
+        
+        const APPEAL_DEADLINE_MS = 3 * 24 * 60 * 60 * 1000; 
+        const timeSincePunishment = Date.now() - log.timestamp;
+        if (timeSincePunishment > APPEAL_DEADLINE_MS) {
+            const daysPassed = Math.floor(timeSincePunishment / (24 * 60 * 60 * 1000));
+            return message.reply(`❌ 異議申し立ての期限（3日以内）を過ぎています。処罰から${daysPassed}日経過しています。`);
+        }
+
+        message.channel.sendTyping();
+
+        const prompt = `
+あなたは公平な裁判官AIです。ユーザーの異議を審査してください。
+
+【ルール】
+1. **「言及」の保護**: 禁止ワードについて議論・引用している場合は、言葉自体が悪くても【ACCEPTED】です。
+2. **過去は不問**: 過去の態度が悪くても、今回の発言と異議理由が正当なら【ACCEPTED】です。
+3. **嘘の排除**: 文脈と明らかに矛盾する嘘の言い訳は【REJECTED】です。
+
+【出力形式】
+必ず以下のJSON形式で、日本語で応答してください。英語は一切使用しないでください。
+{"status": "ACCEPTED" or "REJECTED", "reason": "日本語で公平な理由を記述"}
+
+[警告理由]: ${log.reason}
+[ユーザー異議]: ${reason}
+[元発言]: ${log.content}
+[文脈]: ${log.context_data}
+        `;
+
+        const result = await callGemini(prompt);
+        if (!result) return message.reply('❌ AIエラー');
+
+        const isAccepted = result.status === 'ACCEPTED';
+        if (isAccepted) {
+            reduceWarning(message.author.id, 1);
+            db.prepare('UPDATE mod_logs SET is_resolved = 1 WHERE id = ?').run(logId);
+        }
+
+        const embed = new EmbedBuilder()
+            .setColor(isAccepted ? '#00ff00' : '#ff0000')
+            .setTitle(`⚖️ 審判結果: ${result.status}`)
+            .setDescription(result.reason)
+            .setFooter({ text: CONFIG.GEMINI_CREDIT, iconURL: CONFIG.GEMINI_ICON });
+        
+        message.reply({ embeds: [embed] });
+        return;
+    }
+
+    if (command === 'ticket') {
+        if (args[0] === 'open') {
+            if (getOpenTicket(message.author.id)) return message.reply('❌ 既に開いています');
+            
+            if (!CONFIG.TICKET_CATEGORY_ID || CONFIG.TICKET_CATEGORY_ID.length === 0) {
+                 return message.reply('❌ チケットカテゴリーIDが設定されていません。管理者に連絡してください。');
+            }
+
+            const ch = await message.guild.channels.create({
+                name: `ticket-${message.author.username}`,
+                type: ChannelType.GuildText,
+                parent: CONFIG.TICKET_CATEGORY_ID,
+                permissionOverwrites: [
+                    { id: message.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                    { id: message.author.id, allow: [PermissionsBitField.Flags.ViewChannel] },
+                    { id: CONFIG.ADMIN_ROLE_ID, allow: [PermissionsBitField.Flags.ViewChannel] }
+                ]
+            });
+            setOpenTicket(message.author.id, ch.id);
+            const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_ticket').setLabel('Close').setStyle(ButtonStyle.Danger));
+            ch.send({ content: `${message.author} お問い合わせをどうぞ`, components: [row] });
+            message.reply(`✅ チケット作成: ${ch}`);
+        }
+        else if (args[0] === 'close' && isAdmin) {
+            message.channel.delete().catch(()=>{});
+        }
+        return;
+    }
+
+    // --- Admin Commands ---
+    if (!isAdmin) return;
+
+    if (command === 'warn') {
+        const target = message.mentions.users.first();
+        const reason = args.slice(1).join(' ') || '手動警告';
+        if (!target) return message.reply('❌ ユーザー指定必須: `!warn <@user> [理由]`');
+        
+        let context = ''; 
+        let content = '手動警告';
+        let targetMessageId = null;
+        
+        if (message.reference) {
+            try {
+                const replyMsg = await message.channel.messages.fetch(message.reference.messageId);
+                if (replyMsg.author.id !== target.id) {
+                    return message.reply('❌ リプライ先のメッセージが対象ユーザーのものではありません');
+                }
+                content = replyMsg.content;
+                targetMessageId = replyMsg.id;
+                context = await fetchContext(message.channel, replyMsg.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
+            } catch (e) {
+                return message.reply('❌ メッセージの取得に失敗しました');
+            }
+        } else {
+            try {
+                const messages = await message.channel.messages.fetch({ limit: 50 });
+                const targetMessages = messages.filter(m => m.author.id === target.id && !m.author.bot);
+                
+                if (targetMessages.size === 0) {
+                    return message.reply('❌ 対象ユーザーのメッセージが見つかりませんでした');
+                }
+                
+                const latestMsg = targetMessages.first();
+                content = latestMsg.content;
+                targetMessageId = latestMsg.id;
+                context = await fetchContext(message.channel, latestMsg.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
+            } catch (e) {
+                return message.reply('❌ メッセージの取得に失敗しました');
+            }
+        }
+        
+        message.channel.sendTyping();
+        
+        const oneHourAgo = Date.now() - (60 * 60 * 1000);
+        const recentWarns = db.prepare(`
+            SELECT COUNT(*) as count, MAX(timestamp) as last_warn 
+            FROM mod_logs 
+            WHERE user_id = ? AND type = 'WARN_MANUAL' AND moderator_id = ? AND timestamp > ?
+        `).get(target.id, message.author.id, oneHourAgo);
+        
+        const abuseCheck = await checkWarnAbuse(message.author.id, target.id, reason, context, content);
+        
+        if (abuseCheck && abuseCheck.is_abuse) {
+            const embed = new EmbedBuilder()
+                .setColor('#ff9900')
+                .setTitle('⚠️ 警告の濫用の可能性が検出されました')
+                .setDescription(abuseCheck.reason)
+                .addFields(
+                    { name: '対象ユーザー', value: `${target}`, inline: true },
+                    { name: '警告理由', value: reason, inline: true },
+                    { name: '懸念点', value: abuseCheck.concerns?.join('\n') || 'なし', inline: false }
+                );
+            
+            if (recentWarns.count >= 2) {
+                const timeDiff = Date.now() - recentWarns.last_warn;
+                const minutes = Math.floor(timeDiff / 60000);
+                embed.addFields({ 
+                    name: '⚠️ 警告頻度', 
+                    value: `過去1時間以内に同じユーザーへの警告が**${recentWarns.count}回**記録されています。\n最後の警告から${minutes}分経過しています。`, 
+                    inline: false 
+                });
+            }
+            
+            embed.setFooter({ text: 'それでも警告を実行しますか？', iconURL: CONFIG.GEMINI_ICON });
+            
+            const row = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`warn_confirm_${target.id}_${Date.now()}`)
+                        .setLabel('✅ 実行する')
+                        .setStyle(ButtonStyle.Success),
+                    new ButtonBuilder()
+                        .setCustomId(`warn_cancel_${Date.now()}`)
+                        .setLabel('❌ キャンセル')
+                        .setStyle(ButtonStyle.Danger)
+                );
+            
+            const confirmMsg = await message.reply({ embeds: [embed], components: [row] });
+            
+            const pendingWarnData = {
+                targetId: target.id,
+                moderatorId: message.author.id,
+                reason: reason,
+                content: content,
+                context: context,
+                messageId: targetMessageId,
+                confirmMsgId: confirmMsg.id
+            };
+            
+            if (!global.pendingWarns) global.pendingWarns = new Map();
+            global.pendingWarns.set(confirmMsg.id, pendingWarnData);
+            
+            setTimeout(() => {
+                if (global.pendingWarns && global.pendingWarns.has(confirmMsg.id)) {
+                    global.pendingWarns.delete(confirmMsg.id);
+                    confirmMsg.edit({ components: [] }).catch(() => {});
+                }
+            }, 5 * 60 * 1000);
+            
+            return;
+        }
+        
+        await executeManualWarn(message, target, reason, content, context, targetMessageId);
+    }
+
+    if (command === 'unwarn') {
+        const userId = args[0];
+        if (!userId) return message.reply('❌ ユーザーIDを指定してください: `!unwarn <ユーザーID> [減らす数]`');
+        
+        const target = await message.guild.members.fetch(userId).catch(() => null);
+        if (!target) return message.reply('❌ ユーザーが見つかりません');
+        
+        const amount = parseInt(args[1]) || 1;
+        if (amount < 1) return message.reply('❌ 減らす数は1以上である必要があります');
+        
+        const newCount = reduceWarning(userId, amount);
+        
+        const logId = Date.now().toString(36);
+        saveModLog({
+            id: logId, 
+            type: 'UNWARN', 
+            userId: userId, 
+            moderatorId: message.author.id, 
+            timestamp: Date.now(), 
+            reason: `${amount}個の警告を削減`, 
+            content: '', 
+            contextData: '', 
+            aiAnalysis: null
+        });
+        
+        message.reply(`✅ ${target.user} の警告を${amount}個削減しました (現在: ${newCount})`);
+    }
+
+    if (command === 'listword') {
+        const blackList = Array.from(blacklistCache).join(', ') || 'なし';
+        const grayList = Array.from(graylistCache).join(', ') || 'なし';
+        const embed = new EmbedBuilder().setColor('#0099ff').setTitle('📜 禁止ワード一覧')
+            .addFields({ name: '🚫 即死 (Blacklist)', value: blackList }, { name: '⚡ AI審議 (Graylist)', value: grayList });
+        message.reply({ embeds: [embed] });
+    }
+
+    if (command === 'addword') {
+        const word = args[0];
+        const typeArg = args[1]?.toLowerCase();
+        if (!word) return message.reply('❌ `!addword <単語> [black/gray]`');
+        
+        if (word.length > 100) return message.reply('❌ 単語が長すぎます（最大100文字）');
+        
+        const type = (typeArg === 'gray' || typeArg === 'g') ? 'GRAY' : 'BLACK';
+        
+        db.prepare('INSERT OR REPLACE INTO banned_words (word, type) VALUES (?, ?)').run(word.toLowerCase(), type);
+        loadBannedWords();
+        message.reply(`✅ 追加: **${word}** (${type})`);
+        
+        const logId = Date.now().toString(36);
+        saveModLog({
+            id: logId, 
+            type: 'ADDWORD', 
+            userId: message.author.id, 
+            moderatorId: message.author.id, 
+            timestamp: Date.now(), 
+            reason: `単語追加: ${word} (${type})`, 
+            content: word, 
+            contextData: '', 
+            aiAnalysis: null
+        });
+    }
+
+    if (command === 'removeword') {
+        const word = args[0];
+        if (!word) return message.reply('❌ `!removeword <単語>`');
+        
+        const result = db.prepare('DELETE FROM banned_words WHERE word = ?').run(word.toLowerCase());
+        if (result.changes === 0) {
+            return message.reply(`❌ 単語「${word}」が見つかりませんでした`);
+        }
+        
+        loadBannedWords();
+        message.reply(`✅ 削除: ${word}`);
+        
+        const logId = Date.now().toString(36);
+        saveModLog({
+            id: logId, 
+            type: 'REMOVEWORD', 
+            userId: message.author.id, 
+            moderatorId: message.author.id, 
+            timestamp: Date.now(), 
+            reason: `単語削除: ${word}`, 
+            content: word, 
+            contextData: '', 
+            aiAnalysis: null
+        });
+    }
+
+    if (command === 'timeout_user') {
+        const userId = args[0];
+        if (!userId) return message.reply('❌ ユーザーIDを指定してください: `!timeout_user <ユーザーID>`');
+        
+        const mem = await message.guild.members.fetch(userId).catch(() => null);
+        if (!mem) return message.reply('❌ ユーザーが見つかりません');
+        
+        if (isAdminUser(mem)) {
+            return message.reply('❌ 管理者をタイムアウトすることはできません');
+        }
+        
+        try {
+            await mem.timeout(CONFIG.TIMEOUT_DURATION, `手動タイムアウト by ${message.author.tag}`);
+            message.reply(`🔨 ${mem.user} をタイムアウトしました (${CONFIG.TIMEOUT_DURATION / 1000 / 60}分)`);
+            
+            const logId = Date.now().toString(36);
+            saveModLog({
+                id: logId, 
+                type: 'TIMEOUT', 
+                userId: userId, 
+                moderatorId: message.author.id, 
+                timestamp: Date.now(), 
+                reason: '手動タイムアウト', 
+                content: '', 
+                contextData: '', 
+                aiAnalysis: null
+            });
+        } catch (e) {
+            message.reply(`❌ タイムアウトの実行に失敗しました: ${e.message}`);
+        }
+    }
+    
+    if (command === 'cmdlog') {
+        const limit = Math.min(parseInt(args[0]) || 10, 50); 
+        const logs = db.prepare('SELECT * FROM command_logs WHERE guild_id = ? ORDER BY timestamp DESC LIMIT ?').all(message.guild.id, limit);
+        
+        if (logs.length === 0) {
+            return message.reply('📝 コマンド履歴がありません');
+        }
+        
+        const warnLogs = logs.filter(log => log.command === 'warn' && log.success === 1);
+        const warnFrequency = {};
+        warnLogs.forEach(log => {
+            const args = JSON.parse(log.args || '[]');
+            const targetId = args[0]?.replace(/[<@!>]/g, '') || 'unknown';
+            if (!warnFrequency[targetId]) {
+                warnFrequency[targetId] = { count: 0, times: [] };
+            }
+            warnFrequency[targetId].count++;
+            warnFrequency[targetId].times.push(log.timestamp);
+        });
+        
+        const logText = logs.map(log => {
+            const user = message.guild.members.cache.get(log.user_id);
+            const date = new Date(log.timestamp).toLocaleString('ja-JP', { 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            const args = JSON.parse(log.args || '[]');
+            const argsText = args.length > 0 ? args.join(' ') : '';
+            const commandText = argsText ? `${CONFIG.PREFIX}${log.command} ${argsText}` : `${CONFIG.PREFIX}${log.command}`;
+            return `\`${date}\` **${user?.user?.tag || log.user_id}**: \`${commandText}\` ${log.success ? '✅' : '❌'}`;
+        }).join('\n');
+        
+        const embed = new EmbedBuilder()
+            .setColor('#0099ff')
+            .setTitle('📝 コマンド履歴')
+            .setDescription(logText.length > 4000 ? logText.substring(0, 4000) + '...' : logText)
+            .setFooter({ text: `最新${logs.length}件表示` });
+        
+        const frequentWarns = Object.entries(warnFrequency).filter(([_, data]) => data.count >= 2);
+        if (frequentWarns.length > 0) {
+            const warnText = frequentWarns.map(([targetId, data]) => {
+                const target = message.guild.members.cache.get(targetId);
+                const timeDiff = Math.max(...data.times) - Math.min(...data.times);
+                const minutes = Math.floor(timeDiff / 60000);
+                return `**${target?.user?.tag || targetId}**: ${data.count}回 (${minutes}分以内)`;
+            }).join('\n');
+            
+            embed.addFields({ 
+                name: '⚠️ 警告頻度が高いユーザー', 
+                value: warnText.length > 1024 ? warnText.substring(0, 1024) + '...' : warnText || 'なし',
+                inline: false 
+            });
+        }
+        
+        message.reply({ embeds: [embed] });
+    }
+    
+    if (command === 'warnlog') {
+        const targetId = args[0]?.replace(/[<@!>]/g, '');
+        const limit = Math.min(parseInt(args[1]) || 10, 50);
+        
+        let logs;
+        if (targetId) {
+            logs = db.prepare('SELECT * FROM mod_logs WHERE user_id = ? AND type LIKE ? ORDER BY timestamp DESC LIMIT ?')
+                .all(targetId, 'WARN%', limit);
+        } else {
+            logs = db.prepare('SELECT * FROM mod_logs WHERE type LIKE ? ORDER BY timestamp DESC LIMIT ?')
+                .all('WARN%', limit);
+        }
+        
+        if (logs.length === 0) {
+            return message.reply('📝 警告履歴がありません');
+        }
+        
+        const logText = logs.map(log => {
+            const date = new Date(log.timestamp).toLocaleString('ja-JP', { 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            const moderator = message.guild.members.cache.get(log.moderator_id);
+            const target = message.guild.members.cache.get(log.user_id);
+            return `\`${date}\` ${target?.user?.tag || log.user_id} ← ${moderator?.user?.tag || log.moderator_id}\n理由: ${log.reason}\nID: \`${log.id}\``;
+        }).join('\n\n');
+        
+        const embed = new EmbedBuilder()
+            .setColor('#ff9900')
+            .setTitle('⚠️ 警告履歴')
+            .setDescription(logText.length > 4000 ? logText.substring(0, 4000) + '...' : logText)
+            .setFooter({ text: targetId ? `対象: ${targetId}` : `最新${logs.length}件` });
+        
+        message.reply({ embeds: [embed] });
+    }
+}
+
+module.exports = { handleCommand, executeManualWarn };
+
