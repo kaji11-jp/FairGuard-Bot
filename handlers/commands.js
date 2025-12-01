@@ -244,7 +244,12 @@ async function handleCommand(message) {
             message.reply(`✅ チケット作成: ${ch}`);
         }
         else if (args[0] === 'close' && isAdmin) {
-            message.channel.delete().catch(()=>{});
+            message.channel.delete().catch(error => {
+                logger.error('チケットチャンネル削除エラー', {
+                    channelId: message.channel.id,
+                    error: error.message
+                });
+            });
         }
         return;
     }

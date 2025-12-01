@@ -8,7 +8,7 @@ const saveModLog = (log) => {
 
 // コマンドログ保存
 const saveCommandLog = (userId, command, args, guildId, channelId, success = true) => {
-    const logId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+    const logId = Date.now().toString(36) + Math.random().toString(36).slice(2);
     db.prepare(`INSERT INTO command_logs (id, user_id, command, args, timestamp, guild_id, channel_id, success) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
       .run(logId, userId, command, JSON.stringify(args), Date.now(), guildId, channelId, success ? 1 : 0);
 };

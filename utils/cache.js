@@ -91,11 +91,10 @@ class TTLCache {
 // グローバルインスタンス
 const pendingWarnsCache = new TTLCache(CONFIG.PENDING_WARNS_CACHE_TTL);
 
-// 定期的なクリーンアップ（1分ごと）
-const CACHE_CLEANUP_INTERVAL = 60 * 1000; // 1分
+// 定期的なクリーンアップ
 setInterval(() => {
     pendingWarnsCache.cleanup();
-}, CACHE_CLEANUP_INTERVAL);
+}, CONFIG.CACHE_CLEANUP_INTERVAL);
 
 module.exports = {
     TTLCache,

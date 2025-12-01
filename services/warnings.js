@@ -33,7 +33,7 @@ const cleanupExpiredWarnings = () => {
 const addWarning = (userId, reason = '', moderatorId = '', logId = '') => {
     const now = Date.now();
     const expiresAt = now + WARNING_EXPIRY_MS;
-    const warningId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+    const warningId = Date.now().toString(36) + Math.random().toString(36).slice(2);
     
     try {
         cleanupExpiredWarnings();

@@ -96,7 +96,13 @@ async function handleConfirmation(interaction, confirmationId, approved) {
                 await channel.send({ embeds: [embed] });
             }
         } catch (e) {
-            console.error('Confirmation warning error:', e);
+            const logger = require('../utils/logger');
+            logger.error('確認警告エラー', {
+                confirmationId,
+                userId: confirmation.user_id,
+                error: e.message,
+                stack: e.stack
+            });
         }
     }
     

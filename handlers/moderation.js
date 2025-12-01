@@ -5,6 +5,7 @@ const { blacklistCache, graylistCache } = require('../utils/bannedWords');
 const { fetchContext, callGemini } = require('../services/ai');
 const { addWarning, getActiveWarningCount } = require('../services/warnings');
 const { saveModLog } = require('../utils/logs');
+const { createWarningEmbed, createWarningDeleteEmbed } = require('../utils/embedHelpers');
 const logger = require('../utils/logger');
 const db = require('../database');
 
@@ -79,7 +80,7 @@ async function checkSpamAndLongMessage(message, client) {
             
             const context = await fetchContext(message.channel, message.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
             
-            if (currentWarnCount < 3) {
+            if (currentWarnCount < CONFIG.WARN_THRESHOLD) {
                 const logId = Date.now().toString(36);
                 
                 saveModLog({
@@ -321,22 +322,17 @@ async function executePunishment(message, type, word, reason, context, aiResult,
         });
         
         const warnCount = addWarning(message.author.id, reason, client.user.id, logId);
-    
-    if (currentWarnCount < 3) {
-        const embed = new EmbedBuilder()
-            .setColor(type === 'BLACKLIST' ? '#ff9900' : '#FF9900')
-            .setTitle(type === 'BLACKLIST' ? '⚠️ 警告 (禁止ワード)' : '⚡ AI警告')
-            .setDescription(`${message.author} の発言が検知されました。`)
-            .addFields(
-                { name: '検知ワード', value: `\`${word}\``, inline: true },
-                { name: '理由', value: reason, inline: true },
-                { name: '警告回数', value: `${warnCount}/${CONFIG.WARN_THRESHOLD}`, inline: true },
-                { name: '異議申し立て', value: `\`${CONFIG.PREFIX}appeal ${logId} <理由>\``, inline: false }
-            );
-
-        if (aiResult) {
-            embed.setFooter({ text: CONFIG.GEMINI_CREDIT, iconURL: CONFIG.GEMINI_ICON });
-        }
+        
+        if (currentWarnCount < CONFIG.WARN_THRESHOLD) {
+            const embed = createWarningEmbed({
+                user: message.author,
+                reason: reason,
+                warnCount: warnCount,
+                logId: logId,
+                type: type,
+                word: word,
+                aiResult: aiResult
+            });
 
         message.channel.send({ embeds: [embed] }).catch(error => {
             logger.error('警告メッセージ送信エラー（executePunishment）', { 
@@ -354,20 +350,15 @@ async function executePunishment(message, type, word, reason, context, aiResult,
             });
         }
         
-        const embed = new EmbedBuilder()
-            .setColor(type === 'BLACKLIST' ? '#ff0000' : '#FF4500')
-            .setTitle(type === 'BLACKLIST' ? '🚫 警告 (自動削除)' : '⚡ AI警告 (削除)')
-            .setDescription(`${message.author} の発言は削除されました。`)
-            .addFields(
-                { name: '検知ワード', value: `\`${word}\``, inline: true },
-                { name: '理由', value: reason, inline: true },
-                { name: '警告回数', value: `${warnCount}/${CONFIG.WARN_THRESHOLD}`, inline: true },
-                { name: '異議申し立て', value: `\`${CONFIG.PREFIX}appeal ${logId} <理由>\``, inline: false }
-            );
-
-        if (aiResult) {
-            embed.setFooter({ text: CONFIG.GEMINI_CREDIT, iconURL: CONFIG.GEMINI_ICON });
-        }
+            const embed = createWarningDeleteEmbed({
+                user: message.author,
+                reason: reason,
+                warnCount: warnCount,
+                logId: logId,
+                type: type,
+                word: word,
+                aiResult: aiResult
+            });
 
         message.channel.send({ embeds: [embed] }).catch(error => {
             logger.error('削除通知メッセージ送信エラー（executePunishment）', { 
@@ -375,9 +366,9 @@ async function executePunishment(message, type, word, reason, context, aiResult,
                 error: error.message 
             });
         });
-    }
+        }
 
-    if (warnCount >= CONFIG.WARN_THRESHOLD) {
+        if (warnCount >= CONFIG.WARN_THRESHOLD) {
         const alertCh = message.guild.channels.cache.get(CONFIG.ALERT_CHANNEL_ID);
         if (alertCh) {
             alertCh.send(`🚨 **要レビュー**: ${message.author} が警告閾値に達しました。`).catch(error => {

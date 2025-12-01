@@ -133,6 +133,7 @@ const CONFIG = {
     
     // キャッシュ設定
     PENDING_WARNS_CACHE_TTL: parseInt(process.env.PENDING_WARNS_CACHE_TTL) || 5 * 60 * 1000, // 保留中の警告キャッシュのTTL（ミリ秒、デフォルト5分）
+    CACHE_CLEANUP_INTERVAL: parseInt(process.env.CACHE_CLEANUP_INTERVAL) || 60 * 1000, // キャッシュクリーンアップ間隔（ミリ秒、デフォルト1分）
     
     // 異議申し立て設定
     APPEAL_DEADLINE_DAYS: parseInt(process.env.APPEAL_DEADLINE_DAYS) || 3 // 異議申し立ての期限（日数）

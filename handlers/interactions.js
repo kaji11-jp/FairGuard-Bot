@@ -33,7 +33,12 @@ async function handleInteraction(interaction) {
         interaction.reply('Closing...');
         setTimeout(() => {
             if(uid) removeOpenTicket(uid);
-            interaction.channel.delete().catch(()=>{});
+            interaction.channel.delete().catch(error => {
+                logger.error('チケットチャンネル削除エラー（インタラクション）', {
+                    channelId: interaction.channel.id,
+                    error: error.message
+                });
+            });
         }, 2000);
         return;
     }

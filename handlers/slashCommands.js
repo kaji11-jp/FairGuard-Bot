@@ -31,7 +31,12 @@ async function handleSlashCommand(interaction) {
         }).filter(v => v !== null);
         saveCommandLog(interaction.user.id, commandName, options, interaction.guild.id, interaction.channel.id, true);
     } catch (e) {
-        console.error('Command log save error:', e);
+        logger.error('コマンドログ保存エラー（スラッシュコマンド）', {
+            userId: interaction.user.id,
+            command: commandName,
+            error: e.message,
+            stack: e.stack
+        });
     }
     
     // helpコマンド

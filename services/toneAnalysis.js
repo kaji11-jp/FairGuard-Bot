@@ -57,7 +57,13 @@ async function analyzeTone(message) {
             // ただし、これは公開されるので注意
         });
     } catch (e) {
-        console.error('Soft warning DM error:', e);
+        const logger = require('../utils/logger');
+        logger.error('ソフト警告DM送信エラー', {
+            userId: message.author.id,
+            messageId: message.id,
+            error: e.message,
+            stack: e.stack
+        });
     }
     
     return result;
