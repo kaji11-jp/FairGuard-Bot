@@ -1,3 +1,5 @@
+const CONFIG = require('../config');
+
 // TTL付きキャッシュユーティリティ
 class TTLCache {
     constructor(defaultTTL = 5 * 60 * 1000) { // デフォルト5分
@@ -87,12 +89,13 @@ class TTLCache {
 }
 
 // グローバルインスタンス
-const pendingWarnsCache = new TTLCache(5 * 60 * 1000); // 5分TTL
+const pendingWarnsCache = new TTLCache(CONFIG.PENDING_WARNS_CACHE_TTL);
 
 // 定期的なクリーンアップ（1分ごと）
+const CACHE_CLEANUP_INTERVAL = 60 * 1000; // 1分
 setInterval(() => {
     pendingWarnsCache.cleanup();
-}, 60 * 1000);
+}, CACHE_CLEANUP_INTERVAL);
 
 module.exports = {
     TTLCache,

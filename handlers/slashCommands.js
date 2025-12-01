@@ -270,14 +270,14 @@ async function handleSlashCommand(interaction) {
             };
             
             const { pendingWarnsCache } = require('../utils/cache');
-            pendingWarnsCache.set(confirmMsg.id, pendingWarnData, 5 * 60 * 1000);
+            pendingWarnsCache.set(confirmMsg.id, pendingWarnData, CONFIG.PENDING_WARNS_CACHE_TTL);
             
             setTimeout(() => {
                 if (pendingWarnsCache.has(confirmMsg.id)) {
                     pendingWarnsCache.delete(confirmMsg.id);
                     confirmMsg.edit({ components: [] }).catch(() => {});
                 }
-            }, 5 * 60 * 1000);
+            }, CONFIG.PENDING_WARNS_CACHE_TTL);
             
             return;
         }

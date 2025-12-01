@@ -42,14 +42,23 @@ client.on('messageCreate', async (message) => {
         
         // フルモード: 衝突調停（定期的にチェック）
         if (CONFIG.AI_MODE === 'full') {
-            const { mediateConflict } = require('./services/conflictMediation');
-            // 最近のメッセージを取得してチェック（10秒ごと）
-            if (Math.random() < 0.1) { // 10%の確率でチェック（負荷軽減）
-                const recentMessages = await message.channel.messages.fetch({ limit: 10 });
-                const mediation = await mediateConflict(message.channel, Array.from(recentMessages.values()));
-                if (mediation) {
-                    await message.channel.send({ embeds: [mediation] });
+            try {
+                const { mediateConflict } = require('./services/conflictMediation');
+                // 最近のメッセージを取得してチェック（10%の確率でチェック、負荷軽減）
+                if (Math.random() < CONFIG.CONFLICT_CHECK_PROBABILITY) {
+                    const recentMessages = await message.channel.messages.fetch({ limit: 10 });
+                    const mediation = await mediateConflict(message.channel, Array.from(recentMessages.values()));
+                    if (mediation) {
+                        await message.channel.send({ embeds: [mediation] });
+                    }
                 }
+            } catch (error) {
+                logger.error('衝突調停処理エラー', {
+                    channelId: message.channel.id,
+                    error: error.message,
+                    stack: error.stack
+                });
+                // エラーが発生してもメッセージ処理は続行
             }
         }
     } catch (error) {

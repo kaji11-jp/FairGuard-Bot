@@ -9,6 +9,7 @@ const { fetchContext, callGemini, checkWarnAbuse } = require('../services/ai');
 const { blacklistCache, graylistCache, loadBannedWords } = require('../utils/bannedWords');
 const { pendingWarnsCache } = require('../utils/cache');
 const { checkHealth, checkHealthDetailed } = require('../utils/healthCheck');
+const { validateLogId, validateReason, validateWord, validateUserId, validateNumber } = require('../utils/validation');
 const logger = require('../utils/logger');
 const db = require('../database');
 
@@ -126,17 +127,31 @@ async function handleCommand(message) {
     if (command === 'appeal') {
         const [logId, ...reasonParts] = args;
         const reason = reasonParts.join(' ');
+        
+        // バリデーション
         if (!logId || !reason) return message.reply('❌ 理由を入力してください: `!appeal <ID> <理由>`');
+        
+        const logIdValidation = validateLogId(logId);
+        if (!logIdValidation.valid) {
+            return message.reply(`❌ ${logIdValidation.error}`);
+        }
+        
+        const reasonValidation = validateReason(reason);
+        if (!reasonValidation.valid) {
+            return message.reply(`❌ ${reasonValidation.error}`);
+        }
+        
+        const validatedReason = reasonValidation.value;
 
         const log = db.prepare('SELECT * FROM mod_logs WHERE id = ?').get(logId);
         if (!log || log.user_id !== message.author.id) return message.reply('❌ データなし');
         if (log.is_resolved) return message.reply('✅ 既に解決済みです');
         
-        const APPEAL_DEADLINE_MS = 3 * 24 * 60 * 60 * 1000; 
+        const APPEAL_DEADLINE_MS = CONFIG.APPEAL_DEADLINE_DAYS * 24 * 60 * 60 * 1000;
         const timeSincePunishment = Date.now() - log.timestamp;
         if (timeSincePunishment > APPEAL_DEADLINE_MS) {
             const daysPassed = Math.floor(timeSincePunishment / (24 * 60 * 60 * 1000));
-            return message.reply(`❌ 異議申し立ての期限（3日以内）を過ぎています。処罰から${daysPassed}日経過しています。`);
+            return message.reply(`❌ 異議申し立ての期限（${CONFIG.APPEAL_DEADLINE_DAYS}日以内）を過ぎています。処罰から${daysPassed}日経過しています。`);
         }
 
         message.channel.sendTyping();
@@ -154,7 +169,7 @@ async function handleCommand(message) {
 {"status": "ACCEPTED" or "REJECTED", "reason": "日本語で公平な理由を記述"}
 
 [警告理由]: ${log.reason}
-[ユーザー異議]: ${reason}
+[ユーザー異議]: ${validatedReason}
 [元発言]: ${log.content}
 [文脈]: ${log.context_data}
         `;
@@ -239,8 +254,15 @@ async function handleCommand(message) {
 
     if (command === 'warn') {
         const target = message.mentions.users.first();
-        const reason = args.slice(1).join(' ') || '手動警告';
+        const reasonInput = args.slice(1).join(' ') || '手動警告';
         if (!target) return message.reply('❌ ユーザー指定必須: `!warn <@user> [理由]`');
+        
+        // 理由のバリデーション
+        const reasonValidation = validateReason(reasonInput);
+        if (!reasonValidation.valid) {
+            return message.reply(`❌ ${reasonValidation.error}`);
+        }
+        const reason = reasonValidation.value;
         
         let context = ''; 
         let content = '手動警告';
@@ -346,8 +368,8 @@ async function handleCommand(message) {
                 confirmMsgId: confirmMsg.id
             };
             
-            // TTL付きキャッシュに保存（5分で自動削除）
-            pendingWarnsCache.set(confirmMsg.id, pendingWarnData, 5 * 60 * 1000);
+            // TTL付きキャッシュに保存
+            pendingWarnsCache.set(confirmMsg.id, pendingWarnData, CONFIG.PENDING_WARNS_CACHE_TTL);
             
             // 期限切れ時にボタンを無効化
             setTimeout(() => {
@@ -360,7 +382,7 @@ async function handleCommand(message) {
                         });
                     });
                 }
-            }, 5 * 60 * 1000);
+            }, CONFIG.PENDING_WARNS_CACHE_TTL);
             
             return;
         }
@@ -382,11 +404,21 @@ async function handleCommand(message) {
         const userId = args[0];
         if (!userId) return message.reply('❌ ユーザーIDを指定してください: `!unwarn <ユーザーID> [減らす数]`');
         
+        // ユーザーIDのバリデーション
+        const userIdValidation = validateUserId(userId);
+        if (!userIdValidation.valid) {
+            return message.reply(`❌ ${userIdValidation.error}`);
+        }
+        
         const target = await message.guild.members.fetch(userId).catch(() => null);
         if (!target) return message.reply('❌ ユーザーが見つかりません');
         
-        const amount = parseInt(args[1]) || 1;
-        if (amount < 1) return message.reply('❌ 減らす数は1以上である必要があります');
+        // 減らす数のバリデーション
+        const amountValidation = validateNumber(args[1] || 1, 1, 100, '減らす数');
+        if (!amountValidation.valid) {
+            return message.reply(`❌ ${amountValidation.error}`);
+        }
+        const amount = amountValidation.value;
         
         const newCount = reduceWarning(userId, amount);
         
@@ -419,13 +451,18 @@ async function handleCommand(message) {
         const typeArg = args[1]?.toLowerCase();
         if (!word) return message.reply('❌ `!addword <単語> [black/gray]`');
         
-        if (word.length > 100) return message.reply('❌ 単語が長すぎます（最大100文字）');
+        // 単語のバリデーション
+        const wordValidation = validateWord(word);
+        if (!wordValidation.valid) {
+            return message.reply(`❌ ${wordValidation.error}`);
+        }
+        const validatedWord = wordValidation.value;
         
         const type = (typeArg === 'gray' || typeArg === 'g') ? 'GRAY' : 'BLACK';
         
-        db.prepare('INSERT OR REPLACE INTO banned_words (word, type) VALUES (?, ?)').run(word.toLowerCase(), type);
+        db.prepare('INSERT OR REPLACE INTO banned_words (word, type) VALUES (?, ?)').run(validatedWord, type);
         loadBannedWords();
-        message.reply(`✅ 追加: **${word}** (${type})`);
+        message.reply(`✅ 追加: **${validatedWord}** (${type})`);
         
         const logId = Date.now().toString(36);
         saveModLog({
@@ -434,7 +471,7 @@ async function handleCommand(message) {
             userId: message.author.id, 
             moderatorId: message.author.id, 
             timestamp: Date.now(), 
-            reason: `単語追加: ${word} (${type})`, 
+            reason: `単語追加: ${validatedWord} (${type})`, 
             content: word, 
             contextData: '', 
             aiAnalysis: null
@@ -445,7 +482,14 @@ async function handleCommand(message) {
         const word = args[0];
         if (!word) return message.reply('❌ `!removeword <単語>`');
         
-        const result = db.prepare('DELETE FROM banned_words WHERE word = ?').run(word.toLowerCase());
+        // 単語のバリデーション
+        const wordValidation = validateWord(word);
+        if (!wordValidation.valid) {
+            return message.reply(`❌ ${wordValidation.error}`);
+        }
+        const validatedWord = wordValidation.value;
+        
+        const result = db.prepare('DELETE FROM banned_words WHERE word = ?').run(validatedWord);
         if (result.changes === 0) {
             return message.reply(`❌ 単語「${word}」が見つかりませんでした`);
         }
@@ -470,6 +514,12 @@ async function handleCommand(message) {
     if (command === 'timeout_user') {
         const userId = args[0];
         if (!userId) return message.reply('❌ ユーザーIDを指定してください: `!timeout_user <ユーザーID>`');
+        
+        // ユーザーIDのバリデーション
+        const userIdValidation = validateUserId(userId);
+        if (!userIdValidation.valid) {
+            return message.reply(`❌ ${userIdValidation.error}`);
+        }
         
         const mem = await message.guild.members.fetch(userId).catch(() => null);
         if (!mem) return message.reply('❌ ユーザーが見つかりません');
@@ -500,7 +550,12 @@ async function handleCommand(message) {
     }
     
     if (command === 'cmdlog') {
-        const limit = Math.min(parseInt(args[0]) || 10, 50); 
+        // 件数のバリデーション
+        const limitValidation = validateNumber(args[0] || 10, 1, 50, '件数');
+        if (!limitValidation.valid) {
+            return message.reply(`❌ ${limitValidation.error}`);
+        }
+        const limit = limitValidation.value; 
         const logs = db.prepare('SELECT * FROM command_logs WHERE guild_id = ? ORDER BY timestamp DESC LIMIT ?').all(message.guild.id, limit);
         
         if (logs.length === 0) {
@@ -560,8 +615,24 @@ async function handleCommand(message) {
     }
     
     if (command === 'warnlog') {
-        const targetId = args[0]?.replace(/[<@!>]/g, '');
-        const limit = Math.min(parseInt(args[1]) || 10, 50);
+        const targetIdRaw = args[0]?.replace(/[<@!>]/g, '');
+        
+        // ユーザーIDのバリデーション（指定されている場合）
+        let targetId = null;
+        if (targetIdRaw) {
+            const userIdValidation = validateUserId(targetIdRaw);
+            if (!userIdValidation.valid) {
+                return message.reply(`❌ ${userIdValidation.error}`);
+            }
+            targetId = targetIdRaw;
+        }
+        
+        // 件数のバリデーション
+        const limitValidation = validateNumber(args[1] || 10, 1, 50, '件数');
+        if (!limitValidation.valid) {
+            return message.reply(`❌ ${limitValidation.error}`);
+        }
+        const limit = limitValidation.value;
         
         let logs;
         if (targetId) {

@@ -1,7 +1,8 @@
 const db = require('../database');
 const logger = require('../utils/logger');
+const CONFIG = require('../config');
 
-const WARNING_EXPIRY_DAYS = 30;
+const WARNING_EXPIRY_DAYS = CONFIG.WARNING_EXPIRY_DAYS;
 const WARNING_EXPIRY_MS = WARNING_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
 // 有効期限切れの警告を削除（トランザクション付き）

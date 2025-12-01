@@ -123,7 +123,19 @@ const CONFIG = {
     AI_TICKET_RESPONSE_ENABLED: process.env.AI_MODE === 'full',
     
     // 危険ワード自動学習設定
-    AUTO_WORD_LEARNING_ENABLED: process.env.AI_MODE === 'full'
+    AUTO_WORD_LEARNING_ENABLED: process.env.AI_MODE === 'full',
+    
+    // 警告システム設定
+    WARNING_EXPIRY_DAYS: parseInt(process.env.WARNING_EXPIRY_DAYS) || 30, // 警告の有効期限（日数）
+    
+    // 衝突調停設定
+    CONFLICT_CHECK_PROBABILITY: parseFloat(process.env.CONFLICT_CHECK_PROBABILITY) || 0.1, // 衝突調停チェックの確率（10%）
+    
+    // キャッシュ設定
+    PENDING_WARNS_CACHE_TTL: parseInt(process.env.PENDING_WARNS_CACHE_TTL) || 5 * 60 * 1000, // 保留中の警告キャッシュのTTL（ミリ秒、デフォルト5分）
+    
+    // 異議申し立て設定
+    APPEAL_DEADLINE_DAYS: parseInt(process.env.APPEAL_DEADLINE_DAYS) || 3 // 異議申し立ての期限（日数）
 };
 
 // 設定値の妥当性チェック

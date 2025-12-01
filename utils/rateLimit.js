@@ -21,7 +21,7 @@ function checkRateLimit(userId) {
         return false; 
     }
     
-    db.prepare('UPDATE command_rate_limits SET last_command_time = ?, command_count = command_count + 1 WHERE user_id = ?').run(userId, now);
+    db.prepare('UPDATE command_rate_limits SET last_command_time = ?, command_count = command_count + 1 WHERE user_id = ?').run(now, userId);
     return true;
 }
 

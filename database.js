@@ -54,5 +54,29 @@ db.exec(`
     );
 `);
 
+// パフォーマンス向上のためのインデックス作成
+db.exec(`
+    -- warning_records: 警告数の取得で頻繁に使用される(user_id, expires_at)の組み合わせ
+    CREATE INDEX IF NOT EXISTS idx_warning_records_user_expires 
+    ON warning_records(user_id, expires_at);
+    
+    -- mod_logs: 警告履歴の取得で使用される(user_id, timestamp)の組み合わせ
+    CREATE INDEX IF NOT EXISTS idx_mod_logs_user_timestamp 
+    ON mod_logs(user_id, timestamp);
+    
+    -- mod_logs: タイプ別のログ検索で使用される(type, timestamp)の組み合わせ
+    CREATE INDEX IF NOT EXISTS idx_mod_logs_type_timestamp 
+    ON mod_logs(type, timestamp);
+    
+    -- message_tracking: スパム検出で使用される(user_id, channel_id, timestamp)の組み合わせ
+    -- PRIMARY KEYが既にあるが、クエリパターンに合わせて追加のインデックスを作成
+    CREATE INDEX IF NOT EXISTS idx_message_tracking_user_channel_time 
+    ON message_tracking(user_id, channel_id, timestamp);
+    
+    -- mod_logs: 異議申し立てで使用されるis_resolvedとtimestampの組み合わせ
+    CREATE INDEX IF NOT EXISTS idx_mod_logs_resolved_timestamp 
+    ON mod_logs(is_resolved, timestamp);
+`);
+
 module.exports = db;
 
