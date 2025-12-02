@@ -35,11 +35,12 @@ function generateAnalyticsReport(guildId, days = 30) {
         ORDER BY hour
     `).all(startTime);
     
-    // 最も多い禁止ワード
+    // 禁止ワードによる警告の統計（mod_logsからtypeで集計）
+    // 注意: mod_logsテーブルにはwordカラムがないため、type別の集計のみ
     const topWords = db.prepare(`
-        SELECT word, COUNT(*) as count FROM mod_logs
+        SELECT type, COUNT(*) as count FROM mod_logs
         WHERE type IN ('BLACKLIST', 'AI_JUDGE') AND timestamp > ?
-        GROUP BY word
+        GROUP BY type
         ORDER BY count DESC
         LIMIT 5
     `).all(startTime);
@@ -82,10 +83,10 @@ function createAnalyticsEmbed(report, guild) {
         embed.addFields({ name: '⏰ 時間帯別分布', value: hoursText || 'なし', inline: false });
     }
     
-    // 禁止ワード
+    // 禁止ワードタイプ別の統計
     if (report.topWords.length > 0) {
-        const wordsText = report.topWords.map(w => `\`${w.word}\`: ${w.count}回`).join('\n');
-        embed.addFields({ name: '🚫 検知された禁止ワード', value: wordsText || 'なし', inline: false });
+        const wordsText = report.topWords.map(w => `**${w.type}**: ${w.count}回`).join('\n');
+        embed.addFields({ name: '🚫 禁止ワードタイプ別検知数', value: wordsText || 'なし', inline: false });
     }
     
     return embed;
