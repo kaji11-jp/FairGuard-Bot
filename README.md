@@ -488,6 +488,41 @@ Discordのネイティブ機能を使用したモダンなコマンドシステ�
 - `bot_data.sqlite` ファイルの権限を確認
 - データベースファイルが破損している場合は削除して再作成（**警告**: すべてのデータが失われます）
 
+### Windowsで `better-sqlite3` のインストールに失敗する
+
+**問題**: `npm install` 時に `better-sqlite3` のビルドエラーが発生する（Pythonが見つからない、node-gypエラーなど）
+
+**解決策**:
+
+#### 方法1: Visual Studio Build Tools をインストール（推奨）
+
+1. [Visual Studio Build Tools](https://visualstudio.microsoft.com/ja/downloads/#build-tools-for-visual-studio-2022) をダウンロード
+2. インストーラーを実行し、「C++によるデスクトップ開発」ワークロードを選択してインストール
+3. インストール後、PowerShellを再起動
+4. 再度 `npm install` を実行
+
+#### 方法2: Python をインストール（方法1がうまくいかない場合）
+
+1. [Python公式サイト](https://www.python.org/downloads/) から最新のPython 3.xをダウンロード
+2. インストール時に「Add Python to PATH」にチェックを入れる
+3. インストール後、PowerShellを再起動
+4. 再度 `npm install` を実行
+
+#### 方法3: プリビルド済みバイナリを使用
+
+```bash
+npm install --build-from-source=false better-sqlite3
+```
+
+または、環境変数を設定：
+
+```powershell
+$env:npm_config_build_from_source="false"
+npm install better-sqlite3
+```
+
+**注意**: 方法3は、Node.jsのバージョンとアーキテクチャに合ったプリビルド済みバイナリが存在する場合のみ動作します。
+
 ### 警告が発行されない
 
 **問題**: 禁止ワードを発言しても警告が発行されない
