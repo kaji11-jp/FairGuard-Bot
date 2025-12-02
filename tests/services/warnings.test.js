@@ -7,12 +7,39 @@ const fs = require('fs');
 let testDb;
 const testDbPath = path.join(__dirname, '../../test_bot_data.sqlite');
 
+// データベースファイルを安全に削除する関数（Windows対応）
+function safeUnlink(filePath, maxRetries = 5, delay = 100) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                return true;
+            }
+            return true;
+        } catch (error) {
+            if (error.code === 'EBUSY' || error.code === 'EPERM') {
+                // ファイルがロックされている場合、少し待ってから再試行
+                if (i < maxRetries - 1) {
+                    const wait = delay * (i + 1);
+                    const start = Date.now();
+                    while (Date.now() - start < wait) {
+                        // ビジーウェイト
+                    }
+                    continue;
+                }
+            }
+            // その他のエラーまたは最大リトライ回数に達した場合
+            console.warn(`ファイル削除に失敗しました: ${filePath} (${error.code})`);
+            return false;
+        }
+    }
+    return false;
+}
+
 describe('Warning System', () => {
     beforeEach(() => {
         // 既存のテストDBを削除
-        if (fs.existsSync(testDbPath)) {
-            fs.unlinkSync(testDbPath);
-        }
+        safeUnlink(testDbPath);
         
         // テスト用データベースを作成
         testDb = new Database(testDbPath);
@@ -28,16 +55,28 @@ describe('Warning System', () => {
         
         // モジュールのデータベース参照を一時的にテストDBに置き換え
         // 注意: 実際の実装では、データベースをDIできるようにするのが理想的
+        // 現在の実装では、グローバルなdbを使用しているため、テストが困難
+        // このテストは、実際のデータベースを使用するため、スキップされる可能性があります
     });
     
-    afterEach(() => {
-        // テストDBをクローズして削除
-        if (testDb && testDb.open) {
-            testDb.close();
+    afterEach((done) => {
+        // テストDBをクローズ
+        if (testDb) {
+            try {
+                if (testDb.open) {
+                    testDb.close();
+                }
+            } catch (error) {
+                console.warn('データベースクローズエラー:', error.message);
+            }
         }
-        if (fs.existsSync(testDbPath)) {
-            fs.unlinkSync(testDbPath);
-        }
+        testDb = null;
+        
+        // 少し待ってから削除を試みる（Windows対応）
+        setTimeout(() => {
+            safeUnlink(testDbPath);
+            done();
+        }, 100);
     });
     
     test('警告追加でカウントが増加', () => {
