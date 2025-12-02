@@ -135,8 +135,11 @@ Google Gemini APIを活用した、公平で洗練されたコミュニティ運
 1. [Discord Developer Portal](https://discord.com/developers/applications) にアクセス
 2. 「New Application」をクリックしてアプリケーションを作成
 3. 「Bot」タブに移動し、「Add Bot」をクリック
-4. Botのトークンをコピー（後で使用します）
-5. 「OAuth2」→「URL Generator」で以下の権限を選択：
+4. **重要**: 「Privileged Gateway Intents」セクションで以下のインテントを有効化：
+   - ✅ **MESSAGE CONTENT INTENT**（必須：メッセージ内容を読み取るために必要）
+   - ✅ **SERVER MEMBERS INTENT**（推奨：メンバー情報を取得するために必要）
+5. Botのトークンをコピー（後で使用します）
+6. 「OAuth2」→「URL Generator」で以下の権限を選択：
    - `bot`
    - `applications.commands`
    - 必要な権限：
@@ -147,7 +150,7 @@ Google Gemini APIを活用した、公平で洗練されたコミュニティ運
      - `Send Messages`
      - `Embed Links`
      - `Read Message History`
-6. 生成されたURLでBotをサーバーに招待
+7. 生成されたURLでBotをサーバーに招待
 
 ### ステップ2: Google Gemini API キーの取得
 
@@ -460,6 +463,23 @@ Discordのネイティブ機能を使用したモダンなコマンドシステ�
 - すべての必須環境変数が設定されているか確認
 - 値に余分なスペースや引用符がないか確認
 
+### "Used disallowed intents" エラー
+
+**問題**: Bot起動時に `Error: Used disallowed intents` が発生する
+
+**解決策**:
+1. [Discord Developer Portal](https://discord.com/developers/applications) にアクセス
+2. あなたのBotアプリケーションを選択
+3. 左メニューの「Bot」をクリック
+4. 「Privileged Gateway Intents」セクションまでスクロール
+5. 以下のインテントにチェックを入れる：
+   - ✅ **MESSAGE CONTENT INTENT**（必須）
+   - ✅ **SERVER MEMBERS INTENT**（推奨）
+6. 変更を保存
+7. Botを再起動
+
+**注意**: インテントを有効化した後、Botをサーバーから削除して再招待する必要がある場合があります。
+
 ### スラッシュコマンドが表示されない
 
 **問題**: スラッシュコマンドがDiscordに表示されない
@@ -501,12 +521,11 @@ Discordのネイティブ機能を使用したモダンなコマンドシステ�
 3. インストール後、PowerShellを再起動
 4. 再度 `npm install` を実行
 
-#### 方法2: Node.js v20のインストールとPythonのインストール
+#### 方法2: Python をインストール（方法1がうまくいかない場合）
+
 1. [Python公式サイト](https://www.python.org/downloads/) から最新のPython 3.xをダウンロード
 2. インストール時に「Add Python to PATH」にチェックを入れる
 3. インストール後、PowerShellを再起動
-4. nvmをインストール
-5. nvmをインストール後`nvm install 20`と`nvm use 20`を実行
 4. 再度 `npm install` を実行
 
 #### 方法3: プリビルド済みバイナリを使用
