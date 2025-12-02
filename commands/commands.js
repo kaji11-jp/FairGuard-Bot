@@ -21,7 +21,11 @@ const commands = [
         .addSubcommand(subcommand =>
             subcommand
                 .setName('open')
-                .setDescription('新しいチケットを作成')),
+                .setDescription('新しいチケットを作成'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('close')
+                .setDescription('チケットを閉鎖（管理者専用）')),
     
     new SlashCommandBuilder()
         .setName('help')
@@ -124,15 +128,6 @@ const commands = [
                 .setRequired(false)
                 .setMinValue(1)
                 .setMaxValue(50)),
-    
-    new SlashCommandBuilder()
-        .setName('ticket')
-        .setDescription('チケット管理（管理者専用）')
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('close')
-                .setDescription('チケットを閉鎖')),
     
     // フルモード専用コマンド
     new SlashCommandBuilder()
