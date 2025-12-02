@@ -501,11 +501,12 @@ Discordのネイティブ機能を使用したモダンなコマンドシステ�
 3. インストール後、PowerShellを再起動
 4. 再度 `npm install` を実行
 
-#### 方法2: Python をインストール（方法1がうまくいかない場合）
-
+#### 方法2: Node.js v20のインストールとPythonのインストール
 1. [Python公式サイト](https://www.python.org/downloads/) から最新のPython 3.xをダウンロード
 2. インストール時に「Add Python to PATH」にチェックを入れる
 3. インストール後、PowerShellを再起動
+4. nvmをインストール
+5. nvmをインストール後`nvm install 20`と`nvm use 20`を実行
 4. 再度 `npm install` を実行
 
 #### 方法3: プリビルド済みバイナリを使用
