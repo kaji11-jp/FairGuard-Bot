@@ -26,8 +26,7 @@ function checkHealth() {
             pendingWarnsMaxSize: 'unlimited'
         },
         database: {
-            connected: checkDatabaseHealth(),
-            inTransaction: db.inTransaction || false
+            connected: checkDatabaseHealth()
         },
         node: {
             version: process.version,

@@ -2,6 +2,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const CONFIG = require('../config');
 const db = require('../database');
 const { callGemini } = require('./ai');
+const logger = require('../utils/logger');
 
 // AI確認フロー（2段階警告）
 async function requestAIConfirmation(message, aiResult, context, word) {
@@ -12,10 +13,21 @@ async function requestAIConfirmation(message, aiResult, context, word) {
     const confirmationId = Date.now().toString(36);
     
     // 確認リクエストをデータベースに保存
-    db.prepare(`
-        INSERT INTO ai_confirmations (id, message_id, user_id, moderator_id, status, timestamp, ai_analysis, context_data)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(confirmationId, message.id, message.author.id, 'AI', 'pending', Date.now(), JSON.stringify(aiResult), context);
+    try {
+        db.prepare(`
+            INSERT INTO ai_confirmations (id, message_id, user_id, moderator_id, status, timestamp, ai_analysis, context_data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(confirmationId, message.id, message.author.id, 'AI', 'pending', Date.now(), JSON.stringify(aiResult), context);
+    } catch (error) {
+        logger.error('AI確認リクエスト保存エラー', {
+            confirmationId,
+            messageId: message.id,
+            userId: message.author.id,
+            error: error.message,
+            stack: error.stack
+        });
+        return null; // エラー時はnullを返して処理をスキップ
+    }
     
     const embed = new EmbedBuilder()
         .setColor('#ffaa00')
@@ -45,14 +57,35 @@ async function requestAIConfirmation(message, aiResult, context, word) {
 
 // 確認結果の処理
 async function handleConfirmation(interaction, confirmationId, approved) {
-    const confirmation = db.prepare('SELECT * FROM ai_confirmations WHERE id = ?').get(confirmationId);
+    let confirmation;
+    try {
+        confirmation = db.prepare('SELECT * FROM ai_confirmations WHERE id = ?').get(confirmationId);
+    } catch (error) {
+        logger.error('AI確認リクエスト取得エラー', {
+            confirmationId,
+            error: error.message,
+            stack: error.stack
+        });
+        return interaction.reply({ content: '❌ データベースエラーが発生しました', ephemeral: true });
+    }
+    
     if (!confirmation || confirmation.status !== 'pending') {
         return interaction.reply({ content: '❌ この確認リクエストは無効または既に処理済みです', ephemeral: true });
     }
     
     // ステータス更新
-    db.prepare('UPDATE ai_confirmations SET status = ?, moderator_id = ? WHERE id = ?')
-        .run(approved ? 'approved' : 'rejected', interaction.user.id, confirmationId);
+    try {
+        db.prepare('UPDATE ai_confirmations SET status = ?, moderator_id = ? WHERE id = ?')
+            .run(approved ? 'approved' : 'rejected', interaction.user.id, confirmationId);
+    } catch (error) {
+        logger.error('AI確認ステータス更新エラー', {
+            confirmationId,
+            approved,
+            error: error.message,
+            stack: error.stack
+        });
+        return interaction.reply({ content: '❌ ステータス更新中にエラーが発生しました', ephemeral: true });
+    }
     
     if (approved) {
         // 警告を実行

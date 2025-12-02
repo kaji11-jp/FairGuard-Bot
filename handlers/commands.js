@@ -56,12 +56,8 @@ async function executeManualWarn(source, target, reason, content, context, messa
         embed.addFields({ name: '対象メッセージ', value: `[メッセージへジャンプ](https://discord.com/channels/${guild.id}/${channel.id}/${messageId})`, inline: false });
     }
     
-    // interactionの場合は既にreply済みなので、followUpまたはchannel.sendを使用
-    if (isInteraction) {
-        await channel.send({ embeds: [embed] });
-    } else {
-        await channel.send({ embeds: [embed] });
-    }
+    // 警告メッセージを送信
+    await channel.send({ embeds: [embed] });
     
     if (CONFIG.ALERT_CHANNEL_ID && CONFIG.ALERT_CHANNEL_ID.length > 0) {
         const alertCh = guild.channels.cache.get(CONFIG.ALERT_CHANNEL_ID);
@@ -76,7 +72,11 @@ async function executeManualWarn(source, target, reason, content, context, messa
                     { name: '警告ID', value: `\`${logId}\``, inline: false }
                 )
                 .setTimestamp();
-            alertCh.send({ embeds: [logEmbed] });
+            await alertCh.send({ embeds: [logEmbed] }).catch(error => {
+                logger.error('アラートチャンネル送信エラー（手動警告）', {
+                    error: error.message
+                });
+            });
         }
     }
 }

@@ -4,6 +4,7 @@ const { executeManualWarn } = require('./commands');
 const { handleSlashCommand } = require('./slashCommands');
 const { handleConfirmation } = require('../services/aiConfirmation');
 const { pendingWarnsCache } = require('../utils/cache');
+const CONFIG = require('../config');
 const logger = require('../utils/logger');
 const db = require('../database');
 
@@ -30,16 +31,19 @@ async function handleInteraction(interaction) {
     // チケット閉鎖
     if (interaction.customId === 'close_ticket') {
         const uid = db.prepare('SELECT user_id FROM tickets WHERE channel_id = ?').get(interaction.channel.id)?.user_id;
-        interaction.reply('Closing...');
-        setTimeout(() => {
-            if(uid) removeOpenTicket(uid);
-            interaction.channel.delete().catch(error => {
+        await interaction.reply('Closing...');
+        setTimeout(async () => {
+            try {
+                if(uid) removeOpenTicket(uid);
+                await interaction.channel.delete();
+            } catch (error) {
                 logger.error('チケットチャンネル削除エラー（インタラクション）', {
                     channelId: interaction.channel.id,
-                    error: error.message
+                    error: error.message,
+                    stack: error.stack
                 });
-            });
-        }, 2000);
+            }
+        }, CONFIG.TICKET_CLOSE_DELAY);
         return;
     }
     

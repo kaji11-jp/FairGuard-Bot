@@ -136,7 +136,10 @@ const CONFIG = {
     CACHE_CLEANUP_INTERVAL: parseInt(process.env.CACHE_CLEANUP_INTERVAL) || 60 * 1000, // キャッシュクリーンアップ間隔（ミリ秒、デフォルト1分）
     
     // 異議申し立て設定
-    APPEAL_DEADLINE_DAYS: parseInt(process.env.APPEAL_DEADLINE_DAYS) || 3 // 異議申し立ての期限（日数）
+    APPEAL_DEADLINE_DAYS: parseInt(process.env.APPEAL_DEADLINE_DAYS) || 3, // 異議申し立ての期限（日数）
+    
+    // チケット設定
+    TICKET_CLOSE_DELAY: parseInt(process.env.TICKET_CLOSE_DELAY) || 2000 // チケット閉鎖時の遅延時間（ミリ秒、デフォルト2秒）
 };
 
 // 設定値の妥当性チェック
