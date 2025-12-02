@@ -28,6 +28,12 @@ function validateReason(reason, maxLength = 500) {
         return { valid: false, error: '理由が無効です' };
     }
     
+    // 改行文字の数を制限（DoS攻撃対策）- trim()の前にチェック
+    const newlineCount = (reason.match(/\n/g) || []).length;
+    if (newlineCount > 10) {
+        return { valid: false, error: '理由に含まれる改行が多すぎます（最大10行）' };
+    }
+    
     const trimmed = reason.trim();
     
     if (trimmed.length === 0) {
@@ -36,12 +42,6 @@ function validateReason(reason, maxLength = 500) {
     
     if (trimmed.length > maxLength) {
         return { valid: false, error: `理由が長すぎます（最大${maxLength}文字）` };
-    }
-    
-    // 改行文字の数を制限（DoS攻撃対策）
-    const newlineCount = (trimmed.match(/\n/g) || []).length;
-    if (newlineCount > 10) {
-        return { valid: false, error: '理由に含まれる改行が多すぎます（最大10行）' };
     }
     
     return { valid: true, value: trimmed };
