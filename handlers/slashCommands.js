@@ -8,6 +8,7 @@ const { addWarning, reduceWarning, getActiveWarningCount } = require('../service
 const { fetchContext, callGemini, checkWarnAbuse } = require('../services/ai');
 const { blacklistCache, graylistCache, loadBannedWords } = require('../utils/bannedWords');
 const { executeManualWarn } = require('./commands');
+const logger = require('../utils/logger');
 const db = require('../database');
 
 async function handleSlashCommand(interaction) {
@@ -73,11 +74,11 @@ async function handleSlashCommand(interaction) {
             return interaction.reply({ content: '✅ 既に解決済みです', ephemeral: true });
         }
         
-        const APPEAL_DEADLINE_MS = 3 * 24 * 60 * 60 * 1000; 
+        const APPEAL_DEADLINE_MS = CONFIG.APPEAL_DEADLINE_DAYS * 24 * 60 * 60 * 1000; 
         const timeSincePunishment = Date.now() - log.timestamp;
         if (timeSincePunishment > APPEAL_DEADLINE_MS) {
             const daysPassed = Math.floor(timeSincePunishment / (24 * 60 * 60 * 1000));
-            return interaction.reply({ content: `❌ 異議申し立ての期限（3日以内）を過ぎています。処罰から${daysPassed}日経過しています。`, ephemeral: true });
+            return interaction.reply({ content: `❌ 異議申し立ての期限（${CONFIG.APPEAL_DEADLINE_DAYS}日以内）を過ぎています。処罰から${daysPassed}日経過しています。`, ephemeral: true });
         }
 
         await interaction.deferReply();
@@ -166,7 +167,13 @@ async function handleSlashCommand(interaction) {
         
         if (subcommand === 'close' && isAdmin) {
             await interaction.deferReply();
-            await interaction.channel.delete().catch(() => {});
+            await interaction.channel.delete().catch(error => {
+                logger.error('チケットチャンネル削除エラー（スラッシュコマンド）', {
+                    channelId: interaction.channel.id,
+                    error: error.message,
+                    stack: error.stack
+                });
+            });
             return;
         }
     }
@@ -225,7 +232,19 @@ async function handleSlashCommand(interaction) {
             WHERE user_id = ? AND type = 'WARN_MANUAL' AND moderator_id = ? AND timestamp > ?
         `).get(target.id, interaction.user.id, oneHourAgo);
         
-        const abuseCheck = await checkWarnAbuse(interaction.user.id, target.id, reason, context, content);
+        let abuseCheck;
+        try {
+            abuseCheck = await checkWarnAbuse(interaction.user.id, target.id, reason, context, content);
+        } catch (error) {
+            logger.error('警告濫用チェックエラー（スラッシュコマンド）', { 
+                moderatorId: interaction.user.id,
+                targetId: target.id,
+                error: error.message,
+                stack: error.stack 
+            });
+            // エラー時は警告を続行（安全側に倒す）
+            abuseCheck = null;
+        }
         
         if (abuseCheck && abuseCheck.is_abuse) {
             const embed = new EmbedBuilder()
@@ -280,7 +299,12 @@ async function handleSlashCommand(interaction) {
             setTimeout(() => {
                 if (pendingWarnsCache.has(confirmMsg.id)) {
                     pendingWarnsCache.delete(confirmMsg.id);
-                    confirmMsg.edit({ components: [] }).catch(() => {});
+                    confirmMsg.edit({ components: [] }).catch(error => {
+                        logger.warn('警告確認メッセージ編集エラー（スラッシュコマンド）', { 
+                            messageId: confirmMsg.id,
+                            error: error.message 
+                        });
+                    });
                 }
             }, CONFIG.PENDING_WARNS_CACHE_TTL);
             

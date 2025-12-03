@@ -101,26 +101,41 @@ async function handleConfirmation(interaction, confirmationId, approved) {
                 const context = await fetchContext(channel, message.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
                 const logId = Date.now().toString(36);
                 
+                let aiAnalysisParsed;
+                let reason;
+                try {
+                    aiAnalysisParsed = JSON.parse(confirmation.ai_analysis);
+                    reason = aiAnalysisParsed.reason || 'AI判定による警告';
+                } catch (parseError) {
+                    logger.error('AI分析データのJSON解析エラー', {
+                        confirmationId,
+                        error: parseError.message,
+                        stack: parseError.stack
+                    });
+                    reason = 'AI判定による警告（解析エラー）';
+                    aiAnalysisParsed = { reason: reason };
+                }
+                
                 saveModLog({
                     id: logId,
                     type: 'AI_JUDGE_CONFIRMED',
                     userId: message.author.id,
                     moderatorId: interaction.user.id,
                     timestamp: Date.now(),
-                    reason: JSON.parse(confirmation.ai_analysis).reason,
+                    reason: reason,
                     content: message.content,
                     contextData: context,
                     aiAnalysis: confirmation.ai_analysis
                 });
                 
-                const warnCount = addWarning(message.author.id, JSON.parse(confirmation.ai_analysis).reason, interaction.user.id, logId);
+                const warnCount = addWarning(message.author.id, reason, interaction.user.id, logId);
                 
                 const embed = new EmbedBuilder()
                     .setColor('#ff9900')
                     .setTitle('⚡ AI警告（管理者承認済み）')
                     .setDescription(`${message.author} に警告が発行されました。`)
                     .addFields(
-                        { name: '理由', value: JSON.parse(confirmation.ai_analysis).reason, inline: false },
+                        { name: '理由', value: reason, inline: false },
                         { name: '警告回数', value: `${warnCount}/${CONFIG.WARN_THRESHOLD}`, inline: true },
                         { name: '承認者', value: `${interaction.user}`, inline: true }
                     )

@@ -305,7 +305,7 @@ async function handleCommand(message) {
         
         message.channel.sendTyping();
         
-        const oneHourAgo = Date.now() - (60 * 60 * 1000);
+        const oneHourAgo = Date.now() - CONFIG.ONE_HOUR_MS;
         const recentWarns = db.prepare(`
             SELECT COUNT(*) as count, MAX(timestamp) as last_warn 
             FROM mod_logs 

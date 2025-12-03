@@ -4,7 +4,7 @@ const CONFIG = require('../config');
 // 信用スコア計算
 function calculateTrustScore(userId) {
     const now = Date.now();
-    const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = now - CONFIG.THIRTY_DAYS_MS;
     
     // 警告数
     const warningCount = db.prepare('SELECT COUNT(*) as count FROM warning_records WHERE user_id = ? AND expires_at >= ?')

@@ -191,7 +191,7 @@ async function checkSpamAndLongMessage(message, client) {
         }
     }
     
-    const oneHourAgo = now - (60 * 60 * 1000);
+    const oneHourAgo = now - CONFIG.ONE_HOUR_MS;
     try {
         db.prepare('DELETE FROM message_tracking WHERE timestamp < ?').run(oneHourAgo);
     } catch (error) {

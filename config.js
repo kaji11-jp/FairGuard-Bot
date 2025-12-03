@@ -139,7 +139,11 @@ const CONFIG = {
     APPEAL_DEADLINE_DAYS: parseInt(process.env.APPEAL_DEADLINE_DAYS) || 3, // 異議申し立ての期限（日数）
     
     // チケット設定
-    TICKET_CLOSE_DELAY: parseInt(process.env.TICKET_CLOSE_DELAY) || 2000 // チケット閉鎖時の遅延時間（ミリ秒、デフォルト2秒）
+    TICKET_CLOSE_DELAY: parseInt(process.env.TICKET_CLOSE_DELAY) || 2000, // チケット閉鎖時の遅延時間（ミリ秒、デフォルト2秒）
+    
+    // 時間定数
+    ONE_HOUR_MS: 60 * 60 * 1000, // 1時間（ミリ秒）
+    THIRTY_DAYS_MS: 30 * 24 * 60 * 60 * 1000 // 30日（ミリ秒）
 };
 
 // 設定値の妥当性チェック
