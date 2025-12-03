@@ -1,5 +1,20 @@
 const { Client, GatewayIntentBits } = require('discord.js');
-const CONFIG = require('./config');
+let CONFIG;
+try {
+    CONFIG = require('./config');
+    if (typeof CONFIG.validateEnv === 'function') {
+        const res = CONFIG.validateEnv();
+        if (res.missing?.length > 0 || res.invalid?.length > 0) {
+            console.error('❌ 環境変数の設定に問題があります');
+            if (res.missing?.length > 0) console.error(`不足している変数: ${res.missing.join(', ')}`);
+            if (res.invalid?.length > 0) res.invalid.forEach(i => console.error(i.name ? `${i.name}: ${i.message || i.error || JSON.stringify(i)}` : JSON.stringify(i)));
+            process.exit(1);
+        }
+    }
+} catch (e) {
+    console.error('致命的な設定エラー:', e.message || e);
+    process.exit(1);
+}
 const db = require('./database');
 const logger = require('./utils/logger');
 const { pendingWarnsCache } = require('./utils/cache');

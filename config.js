@@ -58,19 +58,9 @@ for (const { name, validator } of requiredVars) {
     }
 }
 
-if (missing.length > 0 || invalid.length > 0) {
-    logger.error('❌ 環境変数の設定に問題があります');
-    if (missing.length > 0) {
-        logger.error(`不足している変数: ${missing.join(', ')}`);
-    }
-    if (invalid.length > 0) {
-        invalid.forEach(({ name, error }) => {
-            logger.error(`${name}: ${error}`);
-        });
-    }
-    logger.error('README.md または .env.example を確認してください。');
-    process.exit(1);
-}
+// Keep validation results available and non-fatal during import. Startup
+// scripts can call validateEnv() and decide how to react (eg. exit).
+const _validation = { missing, invalid };
 
 // 設定オブジェクト
 const CONFIG = {
@@ -190,4 +180,9 @@ function validateConfig() {
 validateConfig();
 
 module.exports = CONFIG;
+module.exports._validation = _validation;
+
+module.exports.validateEnv = function validateEnv() {
+    return { missing: Array.from(_validation.missing), invalid: Array.from(_validation.invalid) };
+};
 

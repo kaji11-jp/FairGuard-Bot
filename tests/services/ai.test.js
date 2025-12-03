@@ -1,9 +1,9 @@
-const { callGemini, callGeminiWithRetry, fetchContext } = require('../../services/ai');
-
 // モック設定
 jest.mock('../../config', () => ({
     GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 }));
+
+const { callGemini, callGeminiWithRetry, fetchContext } = require('../../services/ai');
 
 // 環境変数のモック
 process.env.GEMINI_API_KEY = 'test_api_key';
