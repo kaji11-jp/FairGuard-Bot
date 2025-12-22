@@ -6,10 +6,10 @@ try {
     logger = require('./utils/logger');
 } catch (e) {
     logger = {
-        error: console.error.bind(console),
-        warn: console.warn.bind(console),
-        info: console.log.bind(console),
-        debug: () => {}
+        error: (...args) => console.error('DB ERROR:', ...args),
+        warn: (...args) => console.warn('DB WARN:', ...args),
+        info: (...args) => console.log('DB INFO:', ...args),
+        debug: () => { }
     };
 }
 
@@ -19,16 +19,16 @@ try {
     db = new Database('bot_data.sqlite', {
         verbose: process.env.NODE_ENV === 'development' ? logger.debug.bind(logger) : null
     });
-    
+
     // WALモードを有効化（パフォーマンス向上、読み取りと書き込みの並行性向上）
     db.pragma('journal_mode = WAL');
-    
+
     // 外部キー制約を有効化
     db.pragma('foreign_keys = ON');
-    
+
     // 接続の健全性チェック
     db.prepare('SELECT 1').get();
-    
+
     logger.info('データベース接続が正常に確立されました');
 } catch (error) {
     logger.error('データベース初期化エラー', {

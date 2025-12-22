@@ -7,9 +7,9 @@ try {
 } catch (e) {
     // loggerがまだ利用できない場合はconsoleを使用
     logger = {
-        error: console.error.bind(console),
-        warn: console.warn.bind(console),
-        info: console.log.bind(console),
+        error: (...args) => console.error('ERROR (Fallback Logger):', ...args),
+        warn: (...args) => console.warn('WARN (Fallback Logger):', ...args),
+        info: (...args) => console.log('INFO (Fallback Logger):', ...args),
         debug: () => {}
     };
 }

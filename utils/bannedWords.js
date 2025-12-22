@@ -9,17 +9,19 @@ const loadBannedWords = () => {
     blacklistCache.clear();
     graylistCache.clear();
     const rows = db.prepare('SELECT word, type FROM banned_words').all();
-    
+
+    const insert = db.prepare('INSERT OR IGNORE INTO banned_words (word, type) VALUES (?, ?)');
     if (rows.length === 0) {
-        const insert = db.prepare('INSERT OR IGNORE INTO banned_words (word, type) VALUES (?, ?)');
-        DEFAULT_GRAY_WORDS.forEach(w => insert.run(w, 'GRAY'));
-        DEFAULT_GRAY_WORDS.forEach(w => graylistCache.add(w));
-    } else {
-        rows.forEach(row => {
-            if (row.type === 'GRAY') graylistCache.add(row.word);
-            else blacklistCache.add(row.word);
-        });
+        DEFAULT_GRAY_WORDS.forEach(w => insert.run(w.toLowerCase(), 'GRAY'));
     }
+
+    // 常にDBから最新をロード（初期投入後も含めて）
+    const allRows = db.prepare('SELECT word, type FROM banned_words').all();
+    allRows.forEach(row => {
+        const word = row.word.toLowerCase();
+        if (row.type === 'GRAY') graylistCache.add(word);
+        else blacklistCache.add(word);
+    });
 };
 
 // 初期ロード
