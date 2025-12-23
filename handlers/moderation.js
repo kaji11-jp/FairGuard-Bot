@@ -211,13 +211,19 @@ async function checkSpamAndLongMessage(message, client) {
 // モデレーションロジック (AIハイブリッド)
 async function handleModeration(message, client) {
     if (!message.guild || message.guild.id !== CONFIG.ALLOWED_GUILD_ID) return;
-    if (isAdminUser(message.member)) return;
+
+    if (isAdminUser(message.member)) {
+        logger.debug('管理者メッセージのためスキップ', { userId: message.author.id });
+        return;
+    }
 
     const content = message.content.toLowerCase();
+    logger.debug('モデレーションチェック開始', { userId: message.author.id, content: content.substring(0, 50) });
 
     // A. ブラックリスト (即死)
     for (const word of blacklistCache) {
         if (content.includes(word)) {
+            logger.info('ブラックリストワード検知', { userId: message.author.id, word });
             const context = await fetchContext(message.channel, message.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
             await executePunishment(message, "BLACKLIST", word, "即時削除 (禁止ワード)", context, null, client);
             return;
@@ -234,6 +240,7 @@ async function handleModeration(message, client) {
     }
 
     if (grayMatch) {
+        logger.info('グレーリストワード検知', { userId: message.author.id, word: grayMatch });
         const context = await fetchContext(message.channel, message.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
 
         const prompt = `
@@ -275,6 +282,7 @@ async function handleModeration(message, client) {
         }
 
         if (result.verdict === "UNSAFE") {
+            logger.info('AI判定: UNSAFE（グレーリスト）', { userId: message.author.id, reason: result.reason });
             // フルモードの場合、確認フローを使用
             if (CONFIG.AI_CONFIRMATION_ENABLED) {
                 const { requestAIConfirmation } = require('../services/aiConfirmation');
@@ -282,7 +290,12 @@ async function handleModeration(message, client) {
                 if (confirmation) {
                     const alertCh = message.guild.channels.cache.get(CONFIG.ALERT_CHANNEL_ID);
                     if (alertCh) {
-                        alertCh.send({ embeds: [confirmation.embed], components: [confirmation.row] });
+                        alertCh.send({ embeds: [confirmation.embed], components: [confirmation.row] }).catch(error => {
+                            logger.error('管理者確認メッセージ送信エラー', {
+                                channelId: CONFIG.ALERT_CHANNEL_ID,
+                                error: error.message
+                            });
+                        });
                     }
                     return; // 確認待ち
                 }
@@ -290,7 +303,7 @@ async function handleModeration(message, client) {
             // 確認フローが無効または失敗した場合は通常処理
             await executePunishment(message, "AI_JUDGE", grayMatch, result.reason, context, result, client);
         } else {
-            logger.debug('AI判定: SAFE（グレーリスト）', {
+            logger.info('AI判定: SAFE（グレーリスト）', {
                 userId: message.author.id,
                 tag: message.author.tag,
                 grayMatch,

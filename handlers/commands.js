@@ -57,7 +57,12 @@ async function executeManualWarn(source, target, reason, content, context, messa
     }
 
     // 警告メッセージを送信
-    await channel.send({ embeds: [embed] });
+    await channel.send({ embeds: [embed] }).catch(error => {
+        logger.error('手動警告メッセージ送信エラー', {
+            channelId: channel.id,
+            error: error.message
+        });
+    });
 
     if (CONFIG.ALERT_CHANNEL_ID && CONFIG.ALERT_CHANNEL_ID.length > 0) {
         const alertCh = guild.channels.cache.get(CONFIG.ALERT_CHANNEL_ID);

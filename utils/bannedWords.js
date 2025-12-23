@@ -3,19 +3,28 @@ const db = require('../database');
 // キャッシュ管理
 let blacklistCache = new Set();
 let graylistCache = new Set();
-const DEFAULT_GRAY_WORDS = ["死ね", "殺す", "ゴミ", "カス", "うざい", "きもい", "ガイジ", "馬鹿", "アホ", "kill", "noob"];
+const DEFAULT_GRAY_WORDS = [
+    "死ね", "シネ", "しね",
+    "殺す", "コロス", "ころす",
+    "ゴミ", "ごみ",
+    "カス", "かす",
+    "うざい", "ウザい", "ウザイ",
+    "きもい", "キモい", "キモイ",
+    "ガイジ",
+    "馬鹿", "バカ", "ばか",
+    "アホ", "あほ",
+    "kill", "noob"
+];
 
 const loadBannedWords = () => {
     blacklistCache.clear();
     graylistCache.clear();
-    const rows = db.prepare('SELECT word, type FROM banned_words').all();
 
+    // デフォルトワードを常にDBに反映（存在しない場合のみ追加）
     const insert = db.prepare('INSERT OR IGNORE INTO banned_words (word, type) VALUES (?, ?)');
-    if (rows.length === 0) {
-        DEFAULT_GRAY_WORDS.forEach(w => insert.run(w.toLowerCase(), 'GRAY'));
-    }
+    DEFAULT_GRAY_WORDS.forEach(w => insert.run(w.toLowerCase(), 'GRAY'));
 
-    // 常にDBから最新をロード（初期投入後も含めて）
+    // DBから最新の全単語をロード
     const allRows = db.prepare('SELECT word, type FROM banned_words').all();
     allRows.forEach(row => {
         const word = row.word.toLowerCase();

@@ -25,8 +25,8 @@ const { handleCommand } = require('./handlers/commands');
 const { handleInteraction } = require('./handlers/interactions');
 
 // --- メインクライアント処理 ---
-const client = new Client({ 
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] 
+const client = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
 client.on('ready', () => {
@@ -36,11 +36,17 @@ client.on('ready', () => {
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
-    
+
+    logger.info('メッセージ受信', {
+        author: message.author.tag,
+        guild: message.guild?.name,
+        content: message.content.substring(0, 50)
+    });
+
     if (!message.guild) return;
-    
+
     if (message.guild.id !== CONFIG.ALLOWED_GUILD_ID) return;
-    
+
     try {
         if (message.content.startsWith(CONFIG.PREFIX)) {
             await handleCommand(message);
@@ -54,7 +60,7 @@ client.on('messageCreate', async (message) => {
         if (!isAdminUser(message.member)) {
             await handleModeration(message, client);
         }
-        
+
         // フルモード: 衝突調停（定期的にチェック）
         if (CONFIG.AI_MODE === 'full') {
             try {
@@ -77,9 +83,9 @@ client.on('messageCreate', async (message) => {
             }
         }
     } catch (error) {
-        logger.error('メッセージ処理エラー', { 
+        logger.error('メッセージ処理エラー', {
             error: error.message,
-            stack: error.stack 
+            stack: error.stack
         });
     }
 });
@@ -88,9 +94,9 @@ client.on('interactionCreate', async (interaction) => {
     try {
         await handleInteraction(interaction);
     } catch (error) {
-        logger.error('インタラクション処理エラー', { 
+        logger.error('インタラクション処理エラー', {
             error: error.message,
-            stack: error.stack 
+            stack: error.stack
         });
     }
 });
@@ -105,15 +111,15 @@ async function gracefulShutdown(signal) {
         logger.warn('既にシャットダウン処理中です');
         return;
     }
-    
+
     isShuttingDown = true;
     logger.info(`${signal} シグナルを受信: グレースフルシャットダウンを開始します`);
-    
+
     try {
         // キャッシュのクリーンアップ
         logger.info('キャッシュをクリーンアップ中...');
         pendingWarnsCache.clear();
-        
+
         // データベースのクローズ
         logger.info('データベースをクローズ中...');
         const { checkDatabaseHealth } = require('./database');
@@ -121,14 +127,14 @@ async function gracefulShutdown(signal) {
             db.close();
             logger.info('データベースをクローズしました');
         }
-        
+
         // Discordクライアントのログアウト
         logger.info('Discordクライアントをログアウト中...');
         if (client && client.isReady()) {
             await client.destroy();
             logger.info('Discordクライアントをログアウトしました');
         }
-        
+
         logger.info('Botが正常にシャットダウンしました');
         process.exit(0);
     } catch (error) {

@@ -82,10 +82,11 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, timeout = 30000) {
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
 
-                // レート制限エラー（429）の場合はリトライ
-                if (response.status === 429) {
+                // リトライすべきエラー（429: レート制限, 500: サーバーエラー, 502: 不正なゲートウェイ, 503: サービス過負荷, 504: タイムアウト）
+                const retryableStatuses = [429, 500, 502, 503, 504];
+                if (retryableStatuses.includes(response.status)) {
                     const backoffDelay = Math.pow(2, attempt) * 1000; // 指数バックオフ
-                    logger.warn(`Gemini API レート制限エラー。${backoffDelay}ms後にリトライ`, {
+                    logger.warn(`Gemini API 一時的エラー (${response.status})。${backoffDelay}ms後にリトライ`, {
                         attempt: attempt + 1,
                         maxRetries,
                         status: response.status
@@ -97,7 +98,7 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, timeout = 30000) {
                     }
                 }
 
-                // その他のHTTPエラー
+                // その他のHTTPエラーまたは最大リトライ到達
                 logger.error('Gemini API HTTPエラー', {
                     status: response.status,
                     errorData,
