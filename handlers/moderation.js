@@ -243,17 +243,21 @@ async function handleModeration(message, client) {
         logger.info('グレーリストワード検知', { userId: message.author.id, word: grayMatch });
         const context = await fetchContext(message.channel, message.id, CONFIG.WARN_CONTEXT_BEFORE, CONFIG.WARN_CONTEXT_AFTER);
 
+        const { getRulesText } = require('../services/rules');
+        const serverRules = getRulesText();
+        const ruleSection = serverRules ? `\n【サーバー憲法 (追加ルール)】\n以下のルールに違反している場合も【UNSAFE】としてください：\n${serverRules}\n` : '';
+
         const prompt = `
-あなたは公平なモデレーターAIです。以下の[対象発言]が、文脈において「処罰すべき攻撃的発言」か判定してください。
+あなたは公平なモデレーターAIです。以下の[対象発言]が、文脈において「処罰すべき攻撃的発言」または「サーバー憲法違反」か判定してください。
 
 【重要：判定ルール】
 1. **メタ発言の保護**: 禁止ワードそのものについて語っている場合（例：「『死ね』は良くない」）は【SAFE】です。
 2. **私情の排除**: 過去の文脈でユーザーが態度が悪かったとしても、今回の発言自体が無害なら【SAFE】としてください。
-3. **UNSAFEの条件**: 明確に他者を傷つける意図で使用している場合。
-
+3. **UNSAFEの条件**: 明確に他者を傷つける意図で使用している場合、または【サーバー憲法】に違反している場合。
+${ruleSection}
 【出力形式】
 必ず以下のJSON形式で、日本語で応答してください。英語は一切使用しないでください。
-{"verdict": "SAFE" or "UNSAFE", "reason": "日本語で短い理由を記述"}
+{"verdict": "SAFE" or "UNSAFE", "reason": "日本語で短い理由を記述（違反したルールがあれば言及してください）"}
 
 [文脈]: ${context}
 [対象発言]: ${message.content}
@@ -432,4 +436,3 @@ module.exports = {
     checkSpamAndLongMessage,
     handleModeration
 };
-

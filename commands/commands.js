@@ -161,8 +161,32 @@ const commands = [
     new SlashCommandBuilder()
         .setName('wordcandidates')
         .setDescription('危険ワード候補を表示します（管理者専用、フルモード専用）')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
+    new SlashCommandBuilder()
+        .setName('rule')
+        .setDescription('AI憲法（サーバー独自のルール）を管理します')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('add')
+                .setDescription('新しいルールを追加')
+                .addStringOption(option =>
+                    option.setName('content')
+                        .setDescription('ルールの内容（例：「ネタバレ禁止」）')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('remove')
+                .setDescription('ルールを削除')
+                .addIntegerOption(option =>
+                    option.setName('id')
+                        .setDescription('削除するルールのID（/rule listで確認）')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('list')
+                .setDescription('現在のルール一覧を表示'))
 ].map(command => command.toJSON());
 
 module.exports = { commands };
-

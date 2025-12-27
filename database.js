@@ -87,6 +87,12 @@ db.exec(`
         ticket_id TEXT PRIMARY KEY, user_id TEXT, initial_questions TEXT,
         ai_summary TEXT, status TEXT, created_at INTEGER
     );
+    CREATE TABLE IF NOT EXISTS server_rules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT NOT NULL,
+        created_at INTEGER,
+        added_by TEXT
+    );
 `);
 
 // パフォーマンス向上のためのインデックス作成
@@ -129,4 +135,3 @@ function checkDatabaseHealth() {
 // エクスポート
 module.exports = db;
 module.exports.checkDatabaseHealth = checkDatabaseHealth;
-

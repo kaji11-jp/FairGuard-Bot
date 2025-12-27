@@ -649,7 +649,56 @@ async function handleSlashCommand(interaction) {
         
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
+    
+    // ruleコマンド（管理者専用）
+    if (commandName === 'rule') {
+        if (!isAdmin) {
+            return interaction.reply({ content: '❌ このコマンドは管理者専用です', ephemeral: true });
+        }
+
+        const subcommand = interaction.options.getSubcommand();
+        const { addRule, removeRule, getRules } = require('../services/rules');
+
+        if (subcommand === 'add') {
+            const content = interaction.options.getString('content');
+            try {
+                addRule(content, interaction.user.tag);
+                return interaction.reply({ content: `✅ ルールを追加しました: "${content}"`, ephemeral: true });
+            } catch (e) {
+                return interaction.reply({ content: `❌ エラーが発生しました: ${e.message}`, ephemeral: true });
+            }
+        }
+
+        if (subcommand === 'remove') {
+            const id = interaction.options.getInteger('id');
+            try {
+                const success = removeRule(id);
+                if (success) {
+                    return interaction.reply({ content: `✅ ルールID ${id} を削除しました`, ephemeral: true });
+                } else {
+                    return interaction.reply({ content: `❌ ルールID ${id} が見つかりません`, ephemeral: true });
+                }
+            } catch (e) {
+                return interaction.reply({ content: `❌ エラーが発生しました: ${e.message}`, ephemeral: true });
+            }
+        }
+
+        if (subcommand === 'list') {
+            const rules = getRules();
+            if (rules.length === 0) {
+                return interaction.reply({ content: '📝 登録されているルールはありません', ephemeral: true });
+            }
+
+            const ruleText = rules.map(r => `**ID ${r.id}**: ${r.content} (by ${r.added_by})`).join('\n');
+            const embed = new EmbedBuilder()
+                .setColor('#0099ff')
+                .setTitle('📜 AI憲法 (サーバー固有ルール)')
+                .setDescription(ruleText)
+                .setFooter({ text: 'これらのルールはAIの判断基準に組み込まれます' });
+            
+            return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
+    }
 }
 
 module.exports = { handleSlashCommand };
-
