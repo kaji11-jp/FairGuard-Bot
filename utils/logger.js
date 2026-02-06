@@ -9,8 +9,78 @@ if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir);
 }
 
+// --- カスタムフォーマット: 機密情報のリダクション ---
+const sensitiveKeys = [
+    'BOT_TOKEN', 'GEMINI_API_KEY', 'ENCRYPTION_KEY', // Specific API keys
+    'api_key', 'token', 'secret', // Generic keywords
+    /[a-f0-9]{32,}/i, // Long hex strings (potential API keys, hashes)
+    /pk_live_[a-zA-Z0-9]{24}/, // Example: Stripe Live API keys
+    /sk_live_[a-zA-Z0-9]{24}/  // Example: Stripe Secret API keys
+];
+
+const redact = winston.format((info) => {
+    const message = info.message;
+    const meta = { ...info }; // ログメタデータのコピー
+
+    // メッセージ内容のリダクション
+    if (typeof message === 'string') {
+        info.message = sensitiveKeys.reduce((acc, key) => {
+            if (typeof key === 'string') {
+                const regex = new RegExp(key, 'gi');
+                return acc.replace(regex, '[REDACTED]');
+            } else if (key instanceof RegExp) {
+                return acc.replace(key, '[REDACTED]');
+            }
+            return acc;
+        }, message);
+    }
+
+    // メタデータオブジェクト内の機密情報の検索とリダクション
+    function redactObject(obj) {
+        for (const prop in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+                if (typeof obj[prop] === 'string') {
+                    obj[prop] = sensitiveKeys.reduce((acc, key) => {
+                        if (typeof key === 'string') {
+                            const regex = new RegExp(key, 'gi');
+                            return acc.replace(regex, '[REDACTED]');
+                        } else if (key instanceof RegExp) {
+                            return acc.replace(key, '[REDACTED]');
+                        }
+                        return acc;
+                    }, obj[prop]);
+                } else if (typeof obj[prop] === 'object' && obj[prop] !== null) {
+                    redactObject(obj[prop]); // 再帰的に処理
+                }
+            }
+        }
+    }
+    redactObject(meta); // メタデータ全体をリダクション
+
+    return Object.assign(info, meta);
+});
+
+
+// --- カスタムフォーマット: スタックトレースのパスをリダクション (本番環境のみ) ---
+const formatStackTrace = winston.format((info) => {
+    if (process.env.NODE_ENV === 'production' && info.stack) {
+        // Absolute paths will be replaced with relative paths or a generic identifier.
+        // This is a simplified approach, more robust solution might involve source maps.
+        const appRoot = path.resolve(__dirname, '../'); // Assuming utils/logger.js is in /utils
+        info.stack = info.stack.split('\n').map(line => {
+            if (line.includes(appRoot)) {
+                return line.replace(new RegExp(appRoot, 'g'), '.'); // Replace absolute path with '.'
+            }
+            return line;
+        }).join('\n');
+    }
+    return info;
+});
+
 // ログフォーマット
 const logFormat = winston.format.combine(
+    redact(), // まずリダクション
+    formatStackTrace(), // 次にスタックトレースの整形
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.errors({ stack: true }),
     winston.format.splat(),
@@ -19,11 +89,13 @@ const logFormat = winston.format.combine(
 
 // コンソール用フォーマット（開発時用）
 const consoleFormat = winston.format.combine(
+    redact(), // 開発環境のコンソールでもリダクションを適用
     winston.format.colorize(),
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.printf(({ level, message, timestamp, ...metadata }) => {
         let msg = `${timestamp} [${level}]: ${message}`;
         if (Object.keys(metadata).length > 0) {
+            // metadataは既にredact()で処理されている
             msg += ` ${JSON.stringify(metadata)}`;
         }
         return msg;
@@ -109,4 +181,19 @@ setInterval(() => {
 }, 24 * 60 * 60 * 1000);
 
 module.exports = logger;
+module.exports.sanitize = (input) => {
+    if (typeof input !== 'string') {
+        input = JSON.stringify(input); // オブジェクトを文字列に変換
+    }
+    return sensitiveKeys.reduce((acc, key) => {
+        if (typeof key === 'string') {
+            const regex = new RegExp(key, 'gi');
+            return acc.replace(regex, '[REDACTED]');
+        } else if (key instanceof RegExp) {
+            return acc.replace(key, '[REDACTED]');
+        }
+        return acc;
+    }, input);
+};
+
 

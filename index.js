@@ -1,4 +1,18 @@
+// 環境変数の読み込みを最初に実行
+require('dotenv').config();
+
 const { Client, GatewayIntentBits } = require('discord.js');
+
+// NODE_ENVのチェック
+const currentEnv = process.env.NODE_ENV || 'development';
+console.log(`🤖 Bot is running in ${currentEnv.toUpperCase()} environment.`);
+
+if (currentEnv === 'development') {
+    console.warn('⚠️ 開発環境モードで実行中です。本番環境ではNODE_ENVを"production"に設定してください。');
+} else if (currentEnv !== 'production') {
+    // developmentでもproductionでもない場合
+    console.warn(`⚠️ 不明な環境設定 "${currentEnv}" で実行中です。NODE_ENVは"development"または"production"であるべきです。`);
+}
 let CONFIG;
 try {
     CONFIG = require('./config');

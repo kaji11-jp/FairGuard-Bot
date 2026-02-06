@@ -2,14 +2,38 @@ require('dotenv').config();
 
 // loggerは後で読み込む（循環参照を避けるため）
 let logger;
+let sanitizeOutput = (input) => {
+    // ログモジュールがロードできない場合のフォールバックサニタイズ
+    const sensitiveKeys = [
+        'BOT_TOKEN', 'GEMINI_API_KEY', 'ENCRYPTION_KEY',
+        'api_key', 'token', 'secret',
+        /[a-f0-9]{32,}/i
+    ];
+    if (typeof input !== 'string') {
+        input = JSON.stringify(input);
+    }
+    return sensitiveKeys.reduce((acc, key) => {
+        if (typeof key === 'string') {
+            const regex = new RegExp(key, 'gi');
+            return acc.replace(regex, '[REDACTED]');
+        } else if (key instanceof RegExp) {
+            return acc.replace(key, '[REDACTED]');
+        }
+        return acc;
+    }, input);
+};
+
 try {
-    logger = require('./utils/logger');
+    const loggerModule = require('./utils/logger');
+    logger = loggerModule;
+    if (loggerModule.sanitize) {
+        sanitizeOutput = loggerModule.sanitize;
+    }
 } catch (e) {
-    // loggerがまだ利用できない場合はconsoleを使用
     logger = {
-        error: (...args) => console.error('ERROR (Fallback Logger):', ...args),
-        warn: (...args) => console.warn('WARN (Fallback Logger):', ...args),
-        info: (...args) => console.log('INFO (Fallback Logger):', ...args),
+        error: (...args) => console.error('ERROR (Fallback Logger):', ...args.map(arg => sanitizeOutput(arg))),
+        warn: (...args) => console.warn('WARN (Fallback Logger):', ...args.map(arg => sanitizeOutput(arg))),
+        info: (...args) => console.log('INFO (Fallback Logger):', ...args.map(arg => sanitizeOutput(arg))),
         debug: () => {}
     };
 }
@@ -32,10 +56,28 @@ function isValidDiscordId(id) {
     return /^\d{17,19}$/.test(id);
 }
 
+// Discord BOT Token形式チェック
+function isValidDiscordBotToken(token) {
+    // Discord Bot Tokenの一般的なパターン: Base64エンコードされた3つの部分
+    return /^[a-zA-Z0-9_-]{24}\.[a-zA-Z0-9_-]{6}\.[a-zA-Z0-9_-]{27}$/.test(token);
+}
+
+// Gemini API Key形式チェック
+function isValidGeminiApiKey(key) {
+    // Google Gemini API Keyの一般的なパターン: "AIza"で始まり、35文字の英数字
+    return /^AIza[0-9A-Za-z_-]{35}$/.test(key);
+}
+
+// Encryption Key形式チェック (32バイト=64文字のHEX)
+function isValidEncryptionKey(key) {
+    return /^[0-9a-fA-F]{64}$/.test(key);
+}
+
 // 環境変数チェックとバリデーション
 const requiredVars = [
-    { name: 'BOT_TOKEN', validator: (v) => v.length > 50 }, // Discordトークンは長い
-    { name: 'GEMINI_API_KEY', validator: (v) => v.length > 20 }, // APIキーはある程度の長さ
+    { name: 'BOT_TOKEN', validator: isValidDiscordBotToken },
+    { name: 'GEMINI_API_KEY', validator: isValidGeminiApiKey },
+    { name: 'ENCRYPTION_KEY', validator: isValidEncryptionKey }, // 追加
     { name: 'DISCORD_GUILD_ID', validator: isValidDiscordId },
     { name: 'DISCORD_ADMIN_ROLE_ID', validator: isValidDiscordId },
     { name: 'DISCORD_ALERT_CHANNEL_ID', validator: isValidDiscordId },
