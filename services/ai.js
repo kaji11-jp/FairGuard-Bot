@@ -55,7 +55,10 @@ async function callGeminiWithRetry(prompt, maxRetries = 3, timeout = 30000) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             const systemInstruction = `あなたは日本語で応答するAIです。すべての応答は必ず日本語で行ってください。JSON形式で応答する場合も、理由や説明は日本語で記述してください。`;
-            const fullPrompt = `${systemInstruction}\n\n${prompt}`;
+            // Prompt Injection対策: ユーザー入力をXMLタグで囲むことを推奨する形式に変更
+            // ここでは簡易的に、渡されたprompt全体をラップするのではなく、呼び出し元が意識すべきだが、
+            // 安全策として指示を追加する。
+            const fullPrompt = `${systemInstruction}\n\n以下の入力を処理してください:\n<input>\n${prompt}\n</input>`;
 
             // タイムアウト付きfetch
             const controller = new AbortController();

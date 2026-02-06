@@ -37,6 +37,7 @@ const { isAdminUser } = require('./utils/permissions');
 const { checkSpamAndLongMessage, handleModeration } = require('./handlers/moderation');
 const { handleCommand } = require('./handlers/commands');
 const { handleInteraction } = require('./handlers/interactions');
+const { mediateConflict } = require('./services/conflictMediation');
 
 // --- メインクライアント処理 ---
 const client = new Client({
@@ -78,7 +79,6 @@ client.on('messageCreate', async (message) => {
         // フルモード: 衝突調停（定期的にチェック）
         if (CONFIG.AI_MODE === 'full') {
             try {
-                const { mediateConflict } = require('./services/conflictMediation');
                 // 最近のメッセージを取得してチェック（10%の確率でチェック、負荷軽減）
                 if (Math.random() < CONFIG.CONFLICT_CHECK_PROBABILITY) {
                     const recentMessages = await message.channel.messages.fetch({ limit: 10 });
