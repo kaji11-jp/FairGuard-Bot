@@ -1,0 +1,198 @@
+
+> fairguard-bot@1.0.0 test
+> jest
+
+PASS tests/services/ai.test.js
+  AI Service
+    竏・callGeminiWithRetry 縺ｯ繝ｪ繝医Λ繧､讖滓ｧ九ｒ謖√▽ (15 ms)
+    竏・fetchContext 縺ｯ繧ｨ繝ｩ繝ｼ譎ゅ↓繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ繧定ｿ斐☆ (1 ms)
+
+PASS tests/utils/validation.test.js
+  Input Validation
+    validateLogId
+      竏・譛牙柑縺ｪ繝ｭ繧ｰID繧貞女縺大・繧後ｋ (16 ms)
+      竏・髟ｷ縺吶℃繧九Ο繧ｰID繧呈拠蜷ｦ縺吶ｋ (1 ms)
+      竏・辟｡蜉ｹ縺ｪ譁・ｭ励ｒ蜷ｫ繧繝ｭ繧ｰID繧呈拠蜷ｦ縺吶ｋ (1 ms)
+      竏・遨ｺ縺ｮ繝ｭ繧ｰID繧呈拠蜷ｦ縺吶ｋ
+    validateReason
+      竏・譛牙柑縺ｪ逅・罰繧貞女縺大・繧後ｋ (1 ms)
+      竏・髟ｷ縺吶℃繧狗炊逕ｱ繧呈拠蜷ｦ縺吶ｋ (1 ms)
+      竏・遨ｺ縺ｮ逅・罰繧呈拠蜷ｦ縺吶ｋ
+      竏・謾ｹ陦後′螟壹☆縺弱ｋ逅・罰繧呈拠蜷ｦ縺吶ｋ (1 ms)
+    validateWord
+      竏・譛牙柑縺ｪ蜊倩ｪ槭ｒ蜿励￠蜈･繧後ｋ (1 ms)
+      竏・髟ｷ縺吶℃繧句腰隱槭ｒ諡貞凄縺吶ｋ
+      竏・辟｡蜉ｹ縺ｪ譁・ｭ励ｒ蜷ｫ繧蜊倩ｪ槭ｒ諡貞凄縺吶ｋ
+    validateUserId
+      竏・譛牙柑縺ｪDiscord ID繧貞女縺大・繧後ｋ (1 ms)
+      竏・遏ｭ縺吶℃繧紀D繧呈拠蜷ｦ縺吶ｋ
+      竏・謨ｰ蟄嶺ｻ･螟悶ｒ蜷ｫ繧ID繧呈拠蜷ｦ縺吶ｋ
+    validateNumber
+      竏・譛牙柑縺ｪ謨ｰ蛟､繧貞女縺大・繧後ｋ
+      竏・譛蟆丞､譛ｪ貅縺ｮ謨ｰ蛟､繧呈拠蜷ｦ縺吶ｋ (1 ms)
+      竏・譛螟ｧ蛟､繧定ｶ・∴繧区焚蛟､繧呈拠蜷ｦ縺吶ｋ
+      竏・謨ｰ蛟､縺ｧ縺ｪ縺・､繧呈拠蜷ｦ縺吶ｋ
+
+2026-02-12 02:03:10 [[32minfo[39m]: 繝・・繧ｿ繝吶・繧ｹ謗･邯壹′豁｣蟶ｸ縺ｫ遒ｺ遶九＆繧後∪縺励◆ {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: 險ｭ螳壼､縺ｮ隴ｦ蜻・ {"0":"Gemini繧剃ｽｿ逕ｨ縺吶ｋ縺ｫ縺ｯ [REDACTED] 縺悟ｿ・ｦ√〒縺・,"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[32minfo[39m]: 繝・・繧ｿ繝吶・繧ｹ謗･邯壹′豁｣蟶ｸ縺ｫ遒ｺ遶九＆繧後∪縺励◆ {"service":"fairguard-bot"}
+PASS tests/utils/permissions.test.js
+  Permissions
+    竏・邂｡逅・・Θ繝ｼ繧ｶ繝ｼID繧呈戟縺､繝｡繝ｳ繝舌・縺ｯ邂｡逅・・→縺励※隱崎ｭ倥＆繧後ｋ (13 ms)
+    竏・邂｡逅・・Ο繝ｼ繝ｫ繧呈戟縺､繝｡繝ｳ繝舌・縺ｯ邂｡逅・・→縺励※隱崎ｭ倥＆繧後ｋ
+    竏・邂｡逅・・〒縺ｪ縺・Γ繝ｳ繝舌・縺ｯ邂｡逅・・→縺励※隱崎ｭ倥＆繧後↑縺・(1 ms)
+    竏・null繝｡繝ｳ繝舌・縺ｯ邂｡逅・・→縺励※隱崎ｭ倥＆繧後↑縺・(1 ms)
+    竏・undefined繝｡繝ｳ繝舌・縺ｯ邂｡逅・・→縺励※隱崎ｭ倥＆繧後↑縺・
+PASS tests/config.test.js
+  config module validation
+    竏・validateEnv returns missing keys when env vars not set (274 ms)
+    竏・validateEnv returns no missing when env vars are set with valid formats (63 ms)
+
+2026-02-12 02:03:10 [[32minfo[39m]: 繝・・繧ｿ繝吶・繧ｹ謗･邯壹′豁｣蟶ｸ縺ｫ遒ｺ遶九＆繧後∪縺励◆ {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[32minfo[39m]: 繝・・繧ｿ繝吶・繧ｹ謗･邯壹′豁｣蟶ｸ縺ｫ遒ｺ遶九＆繧後∪縺励◆ {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[32minfo[39m]: 繝・・繧ｿ繝吶・繧ｹ謗･邯壹′豁｣蟶ｸ縺ｫ遒ｺ遶九＆繧後∪縺励◆ {"service":"fairguard-bot"}
+PASS tests/utils/rateLimit.test.js
+  Rate Limit
+    竏・譁ｰ縺励＞繝ｦ繝ｼ繧ｶ繝ｼ縺ｯ繝ｬ繝ｼ繝亥宛髯舌ｒ騾夐℃縺ｧ縺阪ｋ (306 ms)
+    竏・繝ｬ繝ｼ繝亥宛髯仙・縺ｮ繝ｦ繝ｼ繧ｶ繝ｼ縺ｯ騾夐℃縺ｧ縺阪ｋ (88 ms)
+    竏・繝ｬ繝ｼ繝亥宛髯舌↓驕斐＠縺溘Θ繝ｼ繧ｶ繝ｼ縺ｯ繝悶Ο繝・け縺輔ｌ繧・(70 ms)
+    竏・譎る俣遯薙ｒ驕弱℃縺溘Θ繝ｼ繧ｶ繝ｼ縺ｯ繝ｪ繧ｻ繝・ヨ縺輔ｌ繧・(70 ms)
+
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: INSERT INTO warning_records (id, user_id, timestamp, expires_at, reason, moderator_id, log_id) VALUES (?, ?, ?, ?, ?, ?, ?) {"service":"fairguard-bot"}
+PASS tests/utils/cache.test.js
+  TTLCache
+    竏・蛟､繧定ｨｭ螳壹＠縺ｦ蜿門ｾ励〒縺阪ｋ (18 ms)
+    竏・譛滄剞蛻・ｌ縺ｮ蛟､縺ｯ蜿門ｾ励〒縺阪↑縺・(159 ms)
+    竏・has繝｡繧ｽ繝・ラ縺梧ｭ｣縺励￥蜍穂ｽ懊☆繧・(1 ms)
+    竏・delete繝｡繧ｽ繝・ラ縺梧ｭ｣縺励￥蜍穂ｽ懊☆繧・(2 ms)
+    竏・clear繝｡繧ｽ繝・ラ縺後☆縺ｹ縺ｦ縺ｮ蛟､繧貞炎髯､縺吶ｋ (1 ms)
+    竏・cleanup繝｡繧ｽ繝・ラ縺梧悄髯仙・繧後・蛟､繧貞炎髯､縺吶ｋ (167 ms)
+    竏・size繝｡繧ｽ繝・ラ縺梧ｭ｣縺励＞繧ｵ繧､繧ｺ繧定ｿ斐☆ (2 ms)
+
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: INSERT INTO warning_records (id, user_id, timestamp, expires_at, reason, moderator_id, log_id) VALUES (?, ?, ?, ?, ?, ?, ?) {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: INSERT INTO warning_records (id, user_id, timestamp, expires_at, reason, moderator_id, log_id) VALUES (?, ?, ?, ?, ?, ?, ?) {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: INSERT INTO warning_records (id, user_id, timestamp, expires_at, reason, moderator_id, log_id) VALUES (?, ?, ?, ?, ?, ?, ?) {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: INSERT INTO warning_records (id, user_id, timestamp, expires_at, reason, moderator_id, log_id) VALUES (?, ?, ?, ?, ?, ?, ?) {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE id = ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE id = ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE id = ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: INSERT INTO warning_records (id, user_id, timestamp, expires_at, reason, moderator_id, log_id) VALUES (?, ?, ?, ?, ?, ?, ?) {"service":"fairguard-bot"}
+2026-02-12 02:03:10 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:11 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:11 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: INSERT INTO warning_records (id, user_id, timestamp, expires_at, reason, moderator_id, log_id) VALUES (?, ?, ?, ?, ?, ?, ?) {"service":"fairguard-bot"}
+2026-02-12 02:03:11 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:11 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+2026-02-12 02:03:11 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: INSERT INTO warning_records (id, user_id, timestamp, expires_at, reason, moderator_id, log_id) VALUES (?, ?, ?, ?, ?, ?, ?) {"service":"fairguard-bot"}
+2026-02-12 02:03:11 [[33mwarn[39m]: Encryption skipped for positional parameters in table warning_records. Consider using named parameters for automatic encryption. SQL: DELETE FROM warning_records WHERE expires_at < ? {"service":"fairguard-bot"}
+FAIL tests/services/warnings.test.js
+  Warning System
+    ﾃ・隴ｦ蜻願ｿｽ蜉縺ｧ繧ｫ繧ｦ繝ｳ繝医′蠅怜刈 (441 ms)
+    ﾃ・隍・焚縺ｮ隴ｦ蜻翫ｒ霑ｽ蜉縺吶ｋ縺ｨ繧ｫ繧ｦ繝ｳ繝医′蠅怜刈 (130 ms)
+    竏・隴ｦ蜻翫ｒ貂帙ｉ縺吶→繧ｫ繧ｦ繝ｳ繝医′貂帛ｰ・(124 ms)
+    竏・蟄伜惠縺励↑縺・Θ繝ｼ繧ｶ繝ｼ縺ｮ隴ｦ蜻頑焚縺ｯ0 (111 ms)
+    ﾃ・隴ｦ蜻翫ｒ0蛟区ｸ帙ｉ縺昴≧縺ｨ縺励※繧ゅお繝ｩ繝ｼ縺ｫ縺ｪ繧峨↑縺・(123 ms)
+    ﾃ・繝医Λ繝ｳ繧ｶ繧ｯ繧ｷ繝ｧ繝ｳ縺悟､ｱ謨励＠縺溷ｴ蜷医・繝ｭ繝ｼ繝ｫ繝舌ャ繧ｯ (121 ms)
+    ﾃ・譛牙柑譛滄剞蛻・ｌ縺ｮ隴ｦ蜻翫・閾ｪ蜍慕噪縺ｫ蜑企勁縺輔ｌ繧・(123 ms)
+
+  笳・Warning System 窶ｺ 隴ｦ蜻願ｿｽ蜉縺ｧ繧ｫ繧ｦ繝ｳ繝医′蠅怜刈
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 3
+
+      84 |         const count = addWarning(userId, '繝・せ繝郁ｭｦ蜻・, 'mod123', 'log123');
+      85 |         
+    > 86 |         expect(count).toBe(1);
+         |                       ^
+      87 |         expect(getActiveWarningCount(userId)).toBe(1);
+      88 |     });
+      89 |     
+
+      at Object.toBe (tests/services/warnings.test.js:86:23)
+
+  笳・Warning System 窶ｺ 隍・焚縺ｮ隴ｦ蜻翫ｒ霑ｽ蜉縺吶ｋ縺ｨ繧ｫ繧ｦ繝ｳ繝医′蠅怜刈
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 5
+
+      92 |         
+      93 |         addWarning(userId, '隴ｦ蜻・', 'mod123', 'log1');
+    > 94 |         expect(getActiveWarningCount(userId)).toBe(1);
+         |                                               ^
+      95 |         
+      96 |         addWarning(userId, '隴ｦ蜻・', 'mod123', 'log2');
+      97 |         expect(getActiveWarningCount(userId)).toBe(2);
+
+      at Object.toBe (tests/services/warnings.test.js:94:47)
+
+  笳・Warning System 窶ｺ 隴ｦ蜻翫ｒ0蛟区ｸ帙ｉ縺昴≧縺ｨ縺励※繧ゅお繝ｩ繝ｼ縺ｫ縺ｪ繧峨↑縺・
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 3
+
+      129 |         
+      130 |         const count = reduceWarning(userId, 0);
+    > 131 |         expect(count).toBe(1); // 螟画峩縺ｪ縺・[39m
+          |                       ^
+      132 |     });
+      133 |     
+      134 |     test('繝医Λ繝ｳ繧ｶ繧ｯ繧ｷ繝ｧ繝ｳ縺悟､ｱ謨励＠縺溷ｴ蜷医・繝ｭ繝ｼ繝ｫ繝舌ャ繧ｯ', () => {
+
+      at Object.toBe (tests/services/warnings.test.js:131:23)
+
+  笳・Warning System 窶ｺ 繝医Λ繝ｳ繧ｶ繧ｯ繧ｷ繝ｧ繝ｳ縺悟､ｱ謨励＠縺溷ｴ蜷医・繝ｭ繝ｼ繝ｫ繝舌ャ繧ｯ
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 3
+
+      139 |         // 豁｣蟶ｸ縺ｪ繧ｱ繝ｼ繧ｹ
+      140 |         addWarning(userId, '豁｣蟶ｸ縺ｪ隴ｦ蜻・, 'mod123', 'log1');
+    > 141 |         expect(getActiveWarningCount(userId)).toBe(1);
+          |                                               ^
+      142 |         
+      143 |         // 辟｡蜉ｹ縺ｪ繝・・繧ｿ縺ｧ繧ｨ繝ｩ繝ｼ縺檎匱逕溘☆繧句ｴ蜷茨ｼ亥ｮ滄圀縺ｮ螳溯｣・〒縺ｯ縲√ヰ繝ｪ繝・・繧ｷ繝ｧ繝ｳ縺ｧ髦ｲ縺後ｌ繧具ｼ・[39m
+      144 |         // 縺薙・繝・せ繝医・縲√ヨ繝ｩ繝ｳ繧ｶ繧ｯ繧ｷ繝ｧ繝ｳ縺ｮ謨ｴ蜷域ｧ縺御ｿ昴◆繧後ｋ縺薙→繧堤｢ｺ隱阪☆繧九◆繧√・繧ゅ・縺ｧ縺・[39m
+
+      at Object.toBe (tests/services/warnings.test.js:141:47)
+
+  笳・Warning System 窶ｺ 譛牙柑譛滄剞蛻・ｌ縺ｮ隴ｦ蜻翫・閾ｪ蜍慕噪縺ｫ蜑企勁縺輔ｌ繧・
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 3
+
+      150 |         // 隴ｦ蜻翫ｒ霑ｽ蜉
+      151 |         addWarning(userId, '隴ｦ蜻・', 'mod123', 'log1');
+    > 152 |         expect(getActiveWarningCount(userId)).toBe(1);
+          |                                               ^
+      153 |         
+      154 |         // 豕ｨ諢・ 螳滄圀縺ｮ螳溯｣・〒縺ｯ縲∬ｭｦ蜻翫・30譌･縺ｧ螟ｱ蜉ｹ縺励∪縺・[39m
+      155 |         // 縺薙・繝・せ繝医〒縺ｯ縲…leanupExpiredWarnings縺梧ｭ｣縺励￥蜍穂ｽ懊☆繧九％縺ｨ繧堤｢ｺ隱阪＠縺ｾ縺・[39m
+
+      at Object.toBe (tests/services/warnings.test.js:152:47)
+
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure that .unref() was called on them.
+Test Suites: 1 failed, 6 passed, 7 total
+Tests:       5 failed, 40 passed, 45 total
+Snapshots:   0 total
+Time:        3.845 s, estimated 4 s
+Ran all test suites.

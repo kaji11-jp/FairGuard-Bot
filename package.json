@@ -1,0 +1,34 @@
+{
+  "name": "fairguard-bot",
+  "version": "1.0.0",
+  "description": "AI駆動の高度なDiscordモデレーションボット",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "deploy-commands": "node scripts/deploy-commands.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "moderation",
+    "ai",
+    "gemini"
+  ],
+  "author": "kaji11-jp",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

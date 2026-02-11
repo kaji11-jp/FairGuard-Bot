@@ -1,0 +1,482 @@
+
+> fairguard-bot@1.0.0 test
+> jest
+
+PASS tests/services/ai.test.js
+  AI Service
+    竏・callGeminiWithRetry 縺ｯ繝ｪ繝医Λ繧､讖滓ｧ九ｒ謖√▽ (14 ms)
+    竏・fetchContext 縺ｯ繧ｨ繝ｩ繝ｼ譎ゅ↓繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ繧定ｿ斐☆
+
+2026-02-12 01:48:19 [[33mwarn[39m]: 險ｭ螳壼､縺ｮ隴ｦ蜻・ {"0":"Gemini繧剃ｽｿ逕ｨ縺吶ｋ縺ｫ縺ｯ [REDACTED] 縺悟ｿ・ｦ√〒縺・,"service":"fairguard-bot"}
+2026-02-12 01:48:19 [[33mwarn[39m]: 險ｭ螳壼､縺ｮ隴ｦ蜻・ {"0":"Gemini繧剃ｽｿ逕ｨ縺吶ｋ縺ｫ縺ｯ [REDACTED] 縺悟ｿ・ｦ√〒縺・,"service":"fairguard-bot"}
+2026-02-12 01:48:19 [[33mwarn[39m]: 險ｭ螳壼､縺ｮ隴ｦ蜻・ {"0":"Gemini繧剃ｽｿ逕ｨ縺吶ｋ縺ｫ縺ｯ [REDACTED] 縺悟ｿ・ｦ√〒縺・,"service":"fairguard-bot"}
+PASS tests/utils/validation.test.js
+  Input Validation
+    validateLogId
+      竏・譛牙柑縺ｪ繝ｭ繧ｰID繧貞女縺大・繧後ｋ (14 ms)
+      竏・髟ｷ縺吶℃繧九Ο繧ｰID繧呈拠蜷ｦ縺吶ｋ (1 ms)
+      竏・辟｡蜉ｹ縺ｪ譁・ｭ励ｒ蜷ｫ繧繝ｭ繧ｰID繧呈拠蜷ｦ縺吶ｋ (1 ms)
+      竏・遨ｺ縺ｮ繝ｭ繧ｰID繧呈拠蜷ｦ縺吶ｋ
+    validateReason
+      竏・譛牙柑縺ｪ逅・罰繧貞女縺大・繧後ｋ (1 ms)
+      竏・髟ｷ縺吶℃繧狗炊逕ｱ繧呈拠蜷ｦ縺吶ｋ (1 ms)
+      竏・遨ｺ縺ｮ逅・罰繧呈拠蜷ｦ縺吶ｋ (1 ms)
+      竏・謾ｹ陦後′螟壹☆縺弱ｋ逅・罰繧呈拠蜷ｦ縺吶ｋ
+    validateWord
+      竏・譛牙柑縺ｪ蜊倩ｪ槭ｒ蜿励￠蜈･繧後ｋ (1 ms)
+      竏・髟ｷ縺吶℃繧句腰隱槭ｒ諡貞凄縺吶ｋ (1 ms)
+      竏・辟｡蜉ｹ縺ｪ譁・ｭ励ｒ蜷ｫ繧蜊倩ｪ槭ｒ諡貞凄縺吶ｋ
+    validateUserId
+      竏・譛牙柑縺ｪDiscord ID繧貞女縺大・繧後ｋ (1 ms)
+      竏・遏ｭ縺吶℃繧紀D繧呈拠蜷ｦ縺吶ｋ
+      竏・謨ｰ蟄嶺ｻ･螟悶ｒ蜷ｫ繧ID繧呈拠蜷ｦ縺吶ｋ
+    validateNumber
+      竏・譛牙柑縺ｪ謨ｰ蛟､繧貞女縺大・繧後ｋ (1 ms)
+      竏・譛蟆丞､譛ｪ貅縺ｮ謨ｰ蛟､繧呈拠蜷ｦ縺吶ｋ
+      竏・譛螟ｧ蛟､繧定ｶ・∴繧区焚蛟､繧呈拠蜷ｦ縺吶ｋ
+      竏・謨ｰ蛟､縺ｧ縺ｪ縺・､繧呈拠蜷ｦ縺吶ｋ
+
+PASS tests/utils/permissions.test.js
+  Permissions
+    竏・邂｡逅・・Θ繝ｼ繧ｶ繝ｼID繧呈戟縺､繝｡繝ｳ繝舌・縺ｯ邂｡逅・・→縺励※隱崎ｭ倥＆繧後ｋ (16 ms)
+    竏・邂｡逅・・Ο繝ｼ繝ｫ繧呈戟縺､繝｡繝ｳ繝舌・縺ｯ邂｡逅・・→縺励※隱崎ｭ倥＆繧後ｋ (1 ms)
+    竏・邂｡逅・・〒縺ｪ縺・Γ繝ｳ繝舌・縺ｯ邂｡逅・・→縺励※隱崎ｭ倥＆繧後↑縺・(1 ms)
+    竏・null繝｡繝ｳ繝舌・縺ｯ邂｡逅・・→縺励※隱崎ｭ倥＆繧後↑縺・    竏・undefined繝｡繝ｳ繝舌・縺ｯ邂｡逅・・→縺励※隱崎ｭ倥＆繧後↑縺・
+FAIL tests/config.test.js
+  config module validation
+    竏・validateEnv returns missing keys when env vars not set (268 ms)
+    ﾃ・validateEnv returns no missing when env vars are set with valid formats (63 ms)
+
+  笳・config module validation 窶ｺ validateEnv returns no missing when env vars are set with valid formats
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "ENCRYPTION_KEY",
+    + ]
+
+      36 |
+      37 |     expect(res).toBeDefined();
+    > 38 |     expect(res.missing).toEqual([]);
+         |                         ^
+      39 |     expect(res.invalid).toEqual([]);
+      40 |   });
+      41 | });
+
+      at Object.toEqual (tests/config.test.js:38:25)
+
+FAIL tests/services/warnings.test.js
+  笳・Test suite failed to run
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
+
+    Out of the box Jest supports Babel, which will be used to transform your files into valid JS based on your Babel configuration.
+
+    By default "node_modules" folder is ignored by transformers.
+
+    Here's what you can do:
+     窶｢ If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.
+     窶｢ If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript
+     窶｢ To have some of your "node_modules" files transformed, you can specify a custom "transformIgnorePatterns" in your config.
+     窶｢ If you need a custom transformation specify a "transform" option in your config.
+     窶｢ If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the "moduleNameMapper" config option.
+
+    You'll find more details and examples of these config options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    SyntaxError: C:\Users\akaji\FairGuard-Bot\database.js: Identifier 'Database' has already been declared. (5:6)
+
+      3 |
+      4 | // 繝ｭ繧ｬ繝ｼ縺ｯ蠕後〒隱ｭ縺ｿ霎ｼ繧・亥ｾｪ迺ｰ蜿ら・繧帝∩縺代ｋ縺溘ａ・・[39m
+    > 5 | const Database = require('better-sqlite3');
+        |       ^
+      6 | const { encrypt, decrypt, loadEncryptionKey } = require('./utils/encryption');
+      7 |
+      8 | // 繝ｭ繧ｬ繝ｼ縺ｯ蠕後〒隱ｭ縺ｿ霎ｼ繧・亥ｾｪ迺ｰ蜿ら・繧帝∩縺代ｋ縺溘ａ・・[39m
+
+    > 1 | const db = require('../database');
+        |                                  ^
+      2 | const logger = require('../utils/logger');
+      3 | const CONFIG = require('../config');
+      4 |
+
+      at constructor (node_modules/@babel/parser/src/parse-error.ts:95:45)
+      at Parser.toParseError [as raise] (node_modules/@babel/parser/src/tokenizer/index.ts:1507:19)
+      at ScopeHandler.raise [as checkRedeclarationInScope] (node_modules/@babel/parser/src/util/scope.ts:164:19)
+      at ScopeHandler.checkRedeclarationInScope [as declareName] (node_modules/@babel/parser/src/util/scope.ts:118:12)
+      at Parser.declareName [as declareNameFromIdentifier] (node_modules/@babel/parser/src/parser/lval.ts:852:16)
+      at Parser.declareNameFromIdentifier [as checkIdentifier] (node_modules/@babel/parser/src/parser/lval.ts:847:12)
+      at Parser.checkIdentifier [as checkLVal] (node_modules/@babel/parser/src/parser/lval.ts:739:12)
+      at Parser.checkLVal [as parseVarId] (node_modules/@babel/parser/src/parser/statement.ts:1633:10)
+      at Parser.parseVarId [as parseVar] (node_modules/@babel/parser/src/parser/statement.ts:1582:12)
+      at Parser.parseVar [as parseVarStatement] (node_modules/@babel/parser/src/parser/statement.ts:1251:10)
+      at Parser.parseVarStatement [as parseStatementContent] (node_modules/@babel/parser/src/parser/statement.ts:612:21)
+      at Parser.parseStatementContent [as parseStatementLike] (node_modules/@babel/parser/src/parser/statement.ts:482:17)
+      at Parser.parseStatementLike [as parseModuleItem] (node_modules/@babel/parser/src/parser/statement.ts:419:17)
+      at Parser.parseModuleItem [as parseBlockOrModuleBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+      at Parser.parseBlockOrModuleBlockBody [as parseBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+      at Parser.parseBlockBody [as parseProgram] (node_modules/@babel/parser/src/parser/statement.ts:229:10)
+      at Parser.parseProgram [as parseTopLevel] (node_modules/@babel/parser/src/parser/statement.ts:203:25)
+      at Parser.parseTopLevel [as parse] (node_modules/@babel/parser/src/parser/index.ts:88:25)
+      at parse (node_modules/@babel/parser/src/index.ts:86:38)
+      at parser (node_modules/@babel/core/src/parser/index.ts:29:19)
+          at parser.next (<anonymous>)
+      at normalizeFile (node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+          at normalizeFile.next (<anonymous>)
+      at run (node_modules/@babel/core/src/transformation/index.ts:41:36)
+          at run.next (<anonymous>)
+      at transform (node_modules/@babel/core/src/transform.ts:29:20)
+          at transform.next (<anonymous>)
+      at evaluateSync (node_modules/gensync/index.js:251:28)
+      at sync (node_modules/gensync/index.js:89:14)
+      at fn (node_modules/@babel/core/src/errors/rewrite-stack-trace.ts:99:14)
+      at transformSync (node_modules/@babel/core/src/transform.ts:66:52)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/ScriptTransformer.js:545:31)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/ScriptTransformer.js:674:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/ScriptTransformer.js:726:19)
+      at Object.<anonymous> (services/warnings.js:1:34)
+      at Object.require (tests/services/warnings.test.js:1:86)
+
+FAIL tests/utils/rateLimit.test.js
+  Rate Limit
+    ﾃ・譁ｰ縺励＞繝ｦ繝ｼ繧ｶ繝ｼ縺ｯ繝ｬ繝ｼ繝亥宛髯舌ｒ騾夐℃縺ｧ縺阪ｋ (482 ms)
+    ﾃ・繝ｬ繝ｼ繝亥宛髯仙・縺ｮ繝ｦ繝ｼ繧ｶ繝ｼ縺ｯ騾夐℃縺ｧ縺阪ｋ (18 ms)
+    ﾃ・繝ｬ繝ｼ繝亥宛髯舌↓驕斐＠縺溘Θ繝ｼ繧ｶ繝ｼ縺ｯ繝悶Ο繝・け縺輔ｌ繧・(26 ms)
+    ﾃ・譎る俣遯薙ｒ驕弱℃縺溘Θ繝ｼ繧ｶ繝ｼ縺ｯ繝ｪ繧ｻ繝・ヨ縺輔ｌ繧・(14 ms)
+
+  笳・Rate Limit 窶ｺ 譁ｰ縺励＞繝ｦ繝ｼ繧ｶ繝ｼ縺ｯ繝ｬ繝ｼ繝亥宛髯舌ｒ騾夐℃縺ｧ縺阪ｋ
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
+
+    Out of the box Jest supports Babel, which will be used to transform your files into valid JS based on your Babel configuration.
+
+    By default "node_modules" folder is ignored by transformers.
+
+    Here's what you can do:
+     窶｢ If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.
+     窶｢ If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript
+     窶｢ To have some of your "node_modules" files transformed, you can specify a custom "transformIgnorePatterns" in your config.
+     窶｢ If you need a custom transformation specify a "transform" option in your config.
+     窶｢ If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the "moduleNameMapper" config option.
+
+    You'll find more details and examples of these config options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    SyntaxError: C:\Users\akaji\FairGuard-Bot\database.js: Identifier 'Database' has already been declared. (5:6)
+
+      3 |
+      4 | // 繝ｭ繧ｬ繝ｼ縺ｯ蠕後〒隱ｭ縺ｿ霎ｼ繧・亥ｾｪ迺ｰ蜿ら・繧帝∩縺代ｋ縺溘ａ・・[39m
+    > 5 | const Database = require('better-sqlite3');
+        |       ^
+      6 | const { encrypt, decrypt, loadEncryptionKey } = require('./utils/encryption');
+      7 |
+      8 | // 繝ｭ繧ｬ繝ｼ縺ｯ蠕後〒隱ｭ縺ｿ霎ｼ繧・亥ｾｪ迺ｰ蜿ら・繧帝∩縺代ｋ縺溘ａ・・[39m
+
+      35 |         // 豕ｨ諢・ 縺薙・譁ｹ豕輔・繝｢繧ｸ繝･繝ｼ繝ｫ縺ｮ逶ｴ謗･荳頑嶌縺阪ｒ菴ｿ逕ｨ縺励※縺・∪縺吶′縲・[39m
+      36 |         // 繧医ｊ蝣・欧縺ｪ譁ｹ豕輔→縺励※縲∽ｾ晏ｭ俶ｧ豕ｨ蜈･・・I・峨ヱ繧ｿ繝ｼ繝ｳ縺ｮ螳溯｣・ｒ謗ｨ螂ｨ縺励∪縺・[39m
+    > 37 |         const dbModule = require('../../database');
+         |                          ^
+      38 |         originalDbModule = {
+      39 |             prepare: dbModule.prepare,
+      40 |             transaction: dbModule.transaction
+
+      at constructor (node_modules/@babel/parser/src/parse-error.ts:95:45)
+      at Parser.toParseError [as raise] (node_modules/@babel/parser/src/tokenizer/index.ts:1507:19)
+      at ScopeHandler.raise [as checkRedeclarationInScope] (node_modules/@babel/parser/src/util/scope.ts:164:19)
+      at ScopeHandler.checkRedeclarationInScope [as declareName] (node_modules/@babel/parser/src/util/scope.ts:118:12)
+      at Parser.declareName [as declareNameFromIdentifier] (node_modules/@babel/parser/src/parser/lval.ts:852:16)
+      at Parser.declareNameFromIdentifier [as checkIdentifier] (node_modules/@babel/parser/src/parser/lval.ts:847:12)
+      at Parser.checkIdentifier [as checkLVal] (node_modules/@babel/parser/src/parser/lval.ts:739:12)
+      at Parser.checkLVal [as parseVarId] (node_modules/@babel/parser/src/parser/statement.ts:1633:10)
+      at Parser.parseVarId [as parseVar] (node_modules/@babel/parser/src/parser/statement.ts:1582:12)
+      at Parser.parseVar [as parseVarStatement] (node_modules/@babel/parser/src/parser/statement.ts:1251:10)
+      at Parser.parseVarStatement [as parseStatementContent] (node_modules/@babel/parser/src/parser/statement.ts:612:21)
+      at Parser.parseStatementContent [as parseStatementLike] (node_modules/@babel/parser/src/parser/statement.ts:482:17)
+      at Parser.parseStatementLike [as parseModuleItem] (node_modules/@babel/parser/src/parser/statement.ts:419:17)
+      at Parser.parseModuleItem [as parseBlockOrModuleBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+      at Parser.parseBlockOrModuleBlockBody [as parseBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+      at Parser.parseBlockBody [as parseProgram] (node_modules/@babel/parser/src/parser/statement.ts:229:10)
+      at Parser.parseProgram [as parseTopLevel] (node_modules/@babel/parser/src/parser/statement.ts:203:25)
+      at Parser.parseTopLevel [as parse] (node_modules/@babel/parser/src/parser/index.ts:88:25)
+      at parse (node_modules/@babel/parser/src/index.ts:86:38)
+      at parser (node_modules/@babel/core/src/parser/index.ts:29:19)
+          at parser.next (<anonymous>)
+      at normalizeFile (node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+          at normalizeFile.next (<anonymous>)
+      at run (node_modules/@babel/core/src/transformation/index.ts:41:36)
+          at run.next (<anonymous>)
+      at transform (node_modules/@babel/core/src/transform.ts:29:20)
+          at transform.next (<anonymous>)
+      at evaluateSync (node_modules/gensync/index.js:251:28)
+      at sync (node_modules/gensync/index.js:89:14)
+      at fn (node_modules/@babel/core/src/errors/rewrite-stack-trace.ts:99:14)
+      at transformSync (node_modules/@babel/core/src/transform.ts:66:52)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/ScriptTransformer.js:545:31)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/ScriptTransformer.js:674:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/ScriptTransformer.js:726:19)
+      at Object.require (tests/utils/rateLimit.test.js:37:26)
+
+  笳・Rate Limit 窶ｺ 繝ｬ繝ｼ繝亥宛髯仙・縺ｮ繝ｦ繝ｼ繧ｶ繝ｼ縺ｯ騾夐℃縺ｧ縺阪ｋ
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
+
+    Out of the box Jest supports Babel, which will be used to transform your files into valid JS based on your Babel configuration.
+
+    By default "node_modules" folder is ignored by transformers.
+
+    Here's what you can do:
+     窶｢ If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.
+     窶｢ If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript
+     窶｢ To have some of your "node_modules" files transformed, you can specify a custom "transformIgnorePatterns" in your config.
+     窶｢ If you need a custom transformation specify a "transform" option in your config.
+     窶｢ If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the "moduleNameMapper" config option.
+
+    You'll find more details and examples of these config options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    SyntaxError: C:\Users\akaji\FairGuard-Bot\database.js: Identifier 'Database' has already been declared. (5:6)
+
+      3 |
+      4 | // 繝ｭ繧ｬ繝ｼ縺ｯ蠕後〒隱ｭ縺ｿ霎ｼ繧・亥ｾｪ迺ｰ蜿ら・繧帝∩縺代ｋ縺溘ａ・・[39m
+    > 5 | const Database = require('better-sqlite3');
+        |       ^
+      6 | const { encrypt, decrypt, loadEncryptionKey } = require('./utils/encryption');
+      7 |
+      8 | // 繝ｭ繧ｬ繝ｼ縺ｯ蠕後〒隱ｭ縺ｿ霎ｼ繧・亥ｾｪ迺ｰ蜿ら・繧帝∩縺代ｋ縺溘ａ・・[39m
+
+      35 |         // 豕ｨ諢・ 縺薙・譁ｹ豕輔・繝｢繧ｸ繝･繝ｼ繝ｫ縺ｮ逶ｴ謗･荳頑嶌縺阪ｒ菴ｿ逕ｨ縺励※縺・∪縺吶′縲・[39m
+      36 |         // 繧医ｊ蝣・欧縺ｪ譁ｹ豕輔→縺励※縲∽ｾ晏ｭ俶ｧ豕ｨ蜈･・・I・峨ヱ繧ｿ繝ｼ繝ｳ縺ｮ螳溯｣・ｒ謗ｨ螂ｨ縺励∪縺・[39m
+    > 37 |         const dbModule = require('../../database');
+         |                          ^
+      38 |         originalDbModule = {
+      39 |             prepare: dbModule.prepare,
+      40 |             transaction: dbModule.transaction
+
+      at constructor (node_modules/@babel/parser/src/parse-error.ts:95:45)
+      at Parser.toParseError [as raise] (node_modules/@babel/parser/src/tokenizer/index.ts:1507:19)
+      at ScopeHandler.raise [as checkRedeclarationInScope] (node_modules/@babel/parser/src/util/scope.ts:164:19)
+      at ScopeHandler.checkRedeclarationInScope [as declareName] (node_modules/@babel/parser/src/util/scope.ts:118:12)
+      at Parser.declareName [as declareNameFromIdentifier] (node_modules/@babel/parser/src/parser/lval.ts:852:16)
+      at Parser.declareNameFromIdentifier [as checkIdentifier] (node_modules/@babel/parser/src/parser/lval.ts:847:12)
+      at Parser.checkIdentifier [as checkLVal] (node_modules/@babel/parser/src/parser/lval.ts:739:12)
+      at Parser.checkLVal [as parseVarId] (node_modules/@babel/parser/src/parser/statement.ts:1633:10)
+      at Parser.parseVarId [as parseVar] (node_modules/@babel/parser/src/parser/statement.ts:1582:12)
+      at Parser.parseVar [as parseVarStatement] (node_modules/@babel/parser/src/parser/statement.ts:1251:10)
+      at Parser.parseVarStatement [as parseStatementContent] (node_modules/@babel/parser/src/parser/statement.ts:612:21)
+      at Parser.parseStatementContent [as parseStatementLike] (node_modules/@babel/parser/src/parser/statement.ts:482:17)
+      at Parser.parseStatementLike [as parseModuleItem] (node_modules/@babel/parser/src/parser/statement.ts:419:17)
+      at Parser.parseModuleItem [as parseBlockOrModuleBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+      at Parser.parseBlockOrModuleBlockBody [as parseBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+      at Parser.parseBlockBody [as parseProgram] (node_modules/@babel/parser/src/parser/statement.ts:229:10)
+      at Parser.parseProgram [as parseTopLevel] (node_modules/@babel/parser/src/parser/statement.ts:203:25)
+      at Parser.parseTopLevel [as parse] (node_modules/@babel/parser/src/parser/index.ts:88:25)
+      at parse (node_modules/@babel/parser/src/index.ts:86:38)
+      at parser (node_modules/@babel/core/src/parser/index.ts:29:19)
+          at parser.next (<anonymous>)
+      at normalizeFile (node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+          at normalizeFile.next (<anonymous>)
+      at run (node_modules/@babel/core/src/transformation/index.ts:41:36)
+          at run.next (<anonymous>)
+      at transform (node_modules/@babel/core/src/transform.ts:29:20)
+          at transform.next (<anonymous>)
+      at evaluateSync (node_modules/gensync/index.js:251:28)
+      at sync (node_modules/gensync/index.js:89:14)
+      at fn (node_modules/@babel/core/src/errors/rewrite-stack-trace.ts:99:14)
+      at transformSync (node_modules/@babel/core/src/transform.ts:66:52)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/ScriptTransformer.js:545:31)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/ScriptTransformer.js:674:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/ScriptTransformer.js:726:19)
+      at Object.require (tests/utils/rateLimit.test.js:37:26)
+
+  笳・Rate Limit 窶ｺ 繝ｬ繝ｼ繝亥宛髯舌↓驕斐＠縺溘Θ繝ｼ繧ｶ繝ｼ縺ｯ繝悶Ο繝・け縺輔ｌ繧・
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
+
+    Out of the box Jest supports Babel, which will be used to transform your files into valid JS based on your Babel configuration.
+
+    By default "node_modules" folder is ignored by transformers.
+
+    Here's what you can do:
+     窶｢ If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.
+     窶｢ If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript
+     窶｢ To have some of your "node_modules" files transformed, you can specify a custom "transformIgnorePatterns" in your config.
+     窶｢ If you need a custom transformation specify a "transform" option in your config.
+     窶｢ If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the "moduleNameMapper" config option.
+
+    You'll find more details and examples of these config options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    SyntaxError: C:\Users\akaji\FairGuard-Bot\database.js: Identifier 'Database' has already been declared. (5:6)
+
+      3 |
+      4 | // 繝ｭ繧ｬ繝ｼ縺ｯ蠕後〒隱ｭ縺ｿ霎ｼ繧・亥ｾｪ迺ｰ蜿ら・繧帝∩縺代ｋ縺溘ａ・・[39m
+    > 5 | const Database = require('better-sqlite3');
+        |       ^
+      6 | const { encrypt, decrypt, loadEncryptionKey } = require('./utils/encryption');
+      7 |
+      8 | // 繝ｭ繧ｬ繝ｼ縺ｯ蠕後〒隱ｭ縺ｿ霎ｼ繧・亥ｾｪ迺ｰ蜿ら・繧帝∩縺代ｋ縺溘ａ・・[39m
+
+      35 |         // 豕ｨ諢・ 縺薙・譁ｹ豕輔・繝｢繧ｸ繝･繝ｼ繝ｫ縺ｮ逶ｴ謗･荳頑嶌縺阪ｒ菴ｿ逕ｨ縺励※縺・∪縺吶′縲・[39m
+      36 |         // 繧医ｊ蝣・欧縺ｪ譁ｹ豕輔→縺励※縲∽ｾ晏ｭ俶ｧ豕ｨ蜈･・・I・峨ヱ繧ｿ繝ｼ繝ｳ縺ｮ螳溯｣・ｒ謗ｨ螂ｨ縺励∪縺・[39m
+    > 37 |         const dbModule = require('../../database');
+         |                          ^
+      38 |         originalDbModule = {
+      39 |             prepare: dbModule.prepare,
+      40 |             transaction: dbModule.transaction
+
+      at constructor (node_modules/@babel/parser/src/parse-error.ts:95:45)
+      at Parser.toParseError [as raise] (node_modules/@babel/parser/src/tokenizer/index.ts:1507:19)
+      at ScopeHandler.raise [as checkRedeclarationInScope] (node_modules/@babel/parser/src/util/scope.ts:164:19)
+      at ScopeHandler.checkRedeclarationInScope [as declareName] (node_modules/@babel/parser/src/util/scope.ts:118:12)
+      at Parser.declareName [as declareNameFromIdentifier] (node_modules/@babel/parser/src/parser/lval.ts:852:16)
+      at Parser.declareNameFromIdentifier [as checkIdentifier] (node_modules/@babel/parser/src/parser/lval.ts:847:12)
+      at Parser.checkIdentifier [as checkLVal] (node_modules/@babel/parser/src/parser/lval.ts:739:12)
+      at Parser.checkLVal [as parseVarId] (node_modules/@babel/parser/src/parser/statement.ts:1633:10)
+      at Parser.parseVarId [as parseVar] (node_modules/@babel/parser/src/parser/statement.ts:1582:12)
+      at Parser.parseVar [as parseVarStatement] (node_modules/@babel/parser/src/parser/statement.ts:1251:10)
+      at Parser.parseVarStatement [as parseStatementContent] (node_modules/@babel/parser/src/parser/statement.ts:612:21)
+      at Parser.parseStatementContent [as parseStatementLike] (node_modules/@babel/parser/src/parser/statement.ts:482:17)
+      at Parser.parseStatementLike [as parseModuleItem] (node_modules/@babel/parser/src/parser/statement.ts:419:17)
+      at Parser.parseModuleItem [as parseBlockOrModuleBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+      at Parser.parseBlockOrModuleBlockBody [as parseBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+      at Parser.parseBlockBody [as parseProgram] (node_modules/@babel/parser/src/parser/statement.ts:229:10)
+      at Parser.parseProgram [as parseTopLevel] (node_modules/@babel/parser/src/parser/statement.ts:203:25)
+      at Parser.parseTopLevel [as parse] (node_modules/@babel/parser/src/parser/index.ts:88:25)
+      at parse (node_modules/@babel/parser/src/index.ts:86:38)
+      at parser (node_modules/@babel/core/src/parser/index.ts:29:19)
+          at parser.next (<anonymous>)
+      at normalizeFile (node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+          at normalizeFile.next (<anonymous>)
+      at run (node_modules/@babel/core/src/transformation/index.ts:41:36)
+          at run.next (<anonymous>)
+      at transform (node_modules/@babel/core/src/transform.ts:29:20)
+          at transform.next (<anonymous>)
+      at evaluateSync (node_modules/gensync/index.js:251:28)
+      at sync (node_modules/gensync/index.js:89:14)
+      at fn (node_modules/@babel/core/src/errors/rewrite-stack-trace.ts:99:14)
+      at transformSync (node_modules/@babel/core/src/transform.ts:66:52)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/ScriptTransformer.js:545:31)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/ScriptTransformer.js:674:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/ScriptTransformer.js:726:19)
+      at Object.require (tests/utils/rateLimit.test.js:37:26)
+
+  笳・Rate Limit 窶ｺ 譎る俣遯薙ｒ驕弱℃縺溘Θ繝ｼ繧ｶ繝ｼ縺ｯ繝ｪ繧ｻ繝・ヨ縺輔ｌ繧・
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
+
+    Out of the box Jest supports Babel, which will be used to transform your files into valid JS based on your Babel configuration.
+
+    By default "node_modules" folder is ignored by transformers.
+
+    Here's what you can do:
+     窶｢ If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.
+     窶｢ If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript
+     窶｢ To have some of your "node_modules" files transformed, you can specify a custom "transformIgnorePatterns" in your config.
+     窶｢ If you need a custom transformation specify a "transform" option in your config.
+     窶｢ If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the "moduleNameMapper" config option.
+
+    You'll find more details and examples of these config options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    SyntaxError: C:\Users\akaji\FairGuard-Bot\database.js: Identifier 'Database' has already been declared. (5:6)
+
+      3 |
+      4 | // 繝ｭ繧ｬ繝ｼ縺ｯ蠕後〒隱ｭ縺ｿ霎ｼ繧・亥ｾｪ迺ｰ蜿ら・繧帝∩縺代ｋ縺溘ａ・・[39m
+    > 5 | const Database = require('better-sqlite3');
+        |       ^
+      6 | const { encrypt, decrypt, loadEncryptionKey } = require('./utils/encryption');
+      7 |
+      8 | // 繝ｭ繧ｬ繝ｼ縺ｯ蠕後〒隱ｭ縺ｿ霎ｼ繧・亥ｾｪ迺ｰ蜿ら・繧帝∩縺代ｋ縺溘ａ・・[39m
+
+      35 |         // 豕ｨ諢・ 縺薙・譁ｹ豕輔・繝｢繧ｸ繝･繝ｼ繝ｫ縺ｮ逶ｴ謗･荳頑嶌縺阪ｒ菴ｿ逕ｨ縺励※縺・∪縺吶′縲・[39m
+      36 |         // 繧医ｊ蝣・欧縺ｪ譁ｹ豕輔→縺励※縲∽ｾ晏ｭ俶ｧ豕ｨ蜈･・・I・峨ヱ繧ｿ繝ｼ繝ｳ縺ｮ螳溯｣・ｒ謗ｨ螂ｨ縺励∪縺・[39m
+    > 37 |         const dbModule = require('../../database');
+         |                          ^
+      38 |         originalDbModule = {
+      39 |             prepare: dbModule.prepare,
+      40 |             transaction: dbModule.transaction
+
+      at constructor (node_modules/@babel/parser/src/parse-error.ts:95:45)
+      at Parser.toParseError [as raise] (node_modules/@babel/parser/src/tokenizer/index.ts:1507:19)
+      at ScopeHandler.raise [as checkRedeclarationInScope] (node_modules/@babel/parser/src/util/scope.ts:164:19)
+      at ScopeHandler.checkRedeclarationInScope [as declareName] (node_modules/@babel/parser/src/util/scope.ts:118:12)
+      at Parser.declareName [as declareNameFromIdentifier] (node_modules/@babel/parser/src/parser/lval.ts:852:16)
+      at Parser.declareNameFromIdentifier [as checkIdentifier] (node_modules/@babel/parser/src/parser/lval.ts:847:12)
+      at Parser.checkIdentifier [as checkLVal] (node_modules/@babel/parser/src/parser/lval.ts:739:12)
+      at Parser.checkLVal [as parseVarId] (node_modules/@babel/parser/src/parser/statement.ts:1633:10)
+      at Parser.parseVarId [as parseVar] (node_modules/@babel/parser/src/parser/statement.ts:1582:12)
+      at Parser.parseVar [as parseVarStatement] (node_modules/@babel/parser/src/parser/statement.ts:1251:10)
+      at Parser.parseVarStatement [as parseStatementContent] (node_modules/@babel/parser/src/parser/statement.ts:612:21)
+      at Parser.parseStatementContent [as parseStatementLike] (node_modules/@babel/parser/src/parser/statement.ts:482:17)
+      at Parser.parseStatementLike [as parseModuleItem] (node_modules/@babel/parser/src/parser/statement.ts:419:17)
+      at Parser.parseModuleItem [as parseBlockOrModuleBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+      at Parser.parseBlockOrModuleBlockBody [as parseBlockBody] (node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+      at Parser.parseBlockBody [as parseProgram] (node_modules/@babel/parser/src/parser/statement.ts:229:10)
+      at Parser.parseProgram [as parseTopLevel] (node_modules/@babel/parser/src/parser/statement.ts:203:25)
+      at Parser.parseTopLevel [as parse] (node_modules/@babel/parser/src/parser/index.ts:88:25)
+      at parse (node_modules/@babel/parser/src/index.ts:86:38)
+      at parser (node_modules/@babel/core/src/parser/index.ts:29:19)
+          at parser.next (<anonymous>)
+      at normalizeFile (node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+          at normalizeFile.next (<anonymous>)
+      at run (node_modules/@babel/core/src/transformation/index.ts:41:36)
+          at run.next (<anonymous>)
+      at transform (node_modules/@babel/core/src/transform.ts:29:20)
+          at transform.next (<anonymous>)
+      at evaluateSync (node_modules/gensync/index.js:251:28)
+      at sync (node_modules/gensync/index.js:89:14)
+      at fn (node_modules/@babel/core/src/errors/rewrite-stack-trace.ts:99:14)
+      at transformSync (node_modules/@babel/core/src/transform.ts:66:52)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/ScriptTransformer.js:545:31)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/ScriptTransformer.js:674:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/ScriptTransformer.js:726:19)
+      at Object.require (tests/utils/rateLimit.test.js:37:26)
+
+PASS tests/utils/cache.test.js
+  TTLCache
+    竏・蛟､繧定ｨｭ螳壹＠縺ｦ蜿門ｾ励〒縺阪ｋ (15 ms)
+    竏・譛滄剞蛻・ｌ縺ｮ蛟､縺ｯ蜿門ｾ励〒縺阪↑縺・(157 ms)
+    竏・has繝｡繧ｽ繝・ラ縺梧ｭ｣縺励￥蜍穂ｽ懊☆繧・(1 ms)
+    竏・delete繝｡繧ｽ繝・ラ縺梧ｭ｣縺励￥蜍穂ｽ懊☆繧・(1 ms)
+    竏・clear繝｡繧ｽ繝・ラ縺後☆縺ｹ縺ｦ縺ｮ蛟､繧貞炎髯､縺吶ｋ (1 ms)
+    竏・cleanup繝｡繧ｽ繝・ラ縺梧悄髯仙・繧後・蛟､繧貞炎髯､縺吶ｋ (153 ms)
+    竏・size繝｡繧ｽ繝・ラ縺梧ｭ｣縺励＞繧ｵ繧､繧ｺ繧定ｿ斐☆ (1 ms)
+
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure that .unref() was called on them.
+Test Suites: 3 failed, 4 passed, 7 total
+Tests:       5 failed, 33 passed, 38 total
+Snapshots:   0 total
+Time:        2.81 s
+Ran all test suites.
