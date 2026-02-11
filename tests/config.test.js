@@ -25,9 +25,9 @@ describe('config module validation', () => {
   test('validateEnv returns no missing when env vars are set with valid formats', () => {
     jest.resetModules();
 
-    process.env.BOT_TOKEN = 'TESTBOTTOKEN.aaaaaaaaaaaaaaaaaaaaaaaaaaa'; // valid format mock
-    process.env.GEMINI_API_KEY = 'TESTGEMINIKEY.aaaaaaaaaaaaaaaaaaaaaaaaaaa'; // valid format mock
-    process.env.ENCRYPTION_KEY = '0'.repeat(64); // valid format mock (64 chars hex)
+    process.env.BOT_TOKEN = 'MTAwMDAwMDAwMDAwMDAwMDAwMDA.AAAAAA.abcdefghijklmnopqrstuvwxyz0'; // valid format mock (dummy)
+    process.env.GEMINI_API_KEY = 'AIzaDummyKeyForTestingPurposes000000000'; // valid format mock (dummy)
+    process.env.ENCRYPTION_KEY = 'a'.repeat(64); // valid format mock (64 chars hex)
     process.env.DISCORD_GUILD_ID = '12345678901234567';
     process.env.DISCORD_ADMIN_ROLE_ID = '12345678901234567';
     process.env.DISCORD_ALERT_CHANNEL_ID = '12345678901234567';
