@@ -56,10 +56,10 @@ function isValidDiscordId(id) {
     return /^\d{17,19}$/.test(id);
 }
 
-// Discord BOT Token形式チェック
+// Discord BOT Token形式チェック (基本的な構造のみチェックし、長さは柔軟に)
 function isValidDiscordBotToken(token) {
-    // Discord Bot Tokenの一般的なパターン: Base64エンコードされた3つの部分
-    return /^[a-zA-Z0-9_-]{24}\.[a-zA-Z0-9_-]{6}\.[a-zA-Z0-9_-]{27}$/.test(token);
+    // 3つの部分がドットで結合されていることを確認
+    return /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/.test(token);
 }
 
 // Gemini API Key形式チェック
@@ -74,9 +74,9 @@ function isValidEncryptionKey(key) {
 }
 
 // 環境変数チェックとバリデーション
+// GEMINI_API_KEY は AI_PROVIDER に依存するためここではチェックしない
 const requiredVars = [
     { name: 'BOT_TOKEN', validator: isValidDiscordBotToken },
-    { name: 'GEMINI_API_KEY', validator: isValidGeminiApiKey },
     { name: 'ENCRYPTION_KEY', validator: isValidEncryptionKey }, // 追加
     { name: 'DISCORD_GUILD_ID', validator: isValidDiscordId },
     { name: 'DISCORD_ADMIN_ROLE_ID', validator: isValidDiscordId },

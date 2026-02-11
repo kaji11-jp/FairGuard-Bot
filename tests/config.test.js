@@ -19,7 +19,7 @@ describe('config module validation', () => {
     expect(res).toBeDefined();
     expect(Array.isArray(res.missing)).toBe(true);
     expect(res.missing.length).toBeGreaterThan(0);
-    expect(res.missing).toEqual(expect.arrayContaining(['BOT_TOKEN', 'GEMINI_API_KEY']));
+    expect(res.missing).toEqual(expect.arrayContaining(['BOT_TOKEN']));
   });
 
   test('validateEnv returns no missing when env vars are set with valid formats', () => {
