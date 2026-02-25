@@ -1,4 +1,6 @@
 require('dotenv').config();
+const { readFileSync, existsSync } = require('fs');
+const { execSync } = require('child_process');
 
 // loggerは後で読み込む（循環参照を避けるため）
 let logger;
@@ -36,6 +38,44 @@ try {
         info: (...args) => console.log('INFO (Fallback Logger):', ...args.map(arg => sanitizeOutput(arg))),
         debug: () => { }
     };
+}
+
+// 暗号鍵を安全なソースから解決（環境変数 > ファイル > コマンド）
+function resolveEncryptionKey() {
+    if (process.env.ENCRYPTION_KEY) {
+        return process.env.ENCRYPTION_KEY.trim();
+    }
+
+    // ファイルパスが指定されていれば読み込む（例: KMSから取得した鍵をボリュームに配置）
+    if (process.env.ENCRYPTION_KEY_FILE) {
+        try {
+            if (existsSync(process.env.ENCRYPTION_KEY_FILE)) {
+                return readFileSync(process.env.ENCRYPTION_KEY_FILE, 'utf8').trim();
+            }
+            logger.warn('ENCRYPTION_KEY_FILE が見つかりませんでした', { path: process.env.ENCRYPTION_KEY_FILE });
+        } catch (error) {
+            logger.error('ENCRYPTION_KEY_FILE の読み込みに失敗しました', { error: error.message });
+        }
+    }
+
+    // コマンド実行で鍵を取得（例: AWS KMS / Azure Key Vault / GCP Secret Manager から取得するスクリプト）
+    if (process.env.ENCRYPTION_KEY_COMMAND) {
+        try {
+            const output = execSync(process.env.ENCRYPTION_KEY_COMMAND, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+            const key = output.trim();
+            if (key) return key;
+            logger.warn('ENCRYPTION_KEY_COMMAND の出力が空です');
+        } catch (error) {
+            logger.error('ENCRYPTION_KEY_COMMAND の実行に失敗しました', { error: error.message });
+        }
+    }
+
+    return null;
+}
+
+const resolvedKey = resolveEncryptionKey();
+if (resolvedKey) {
+    process.env.ENCRYPTION_KEY = resolvedKey;
 }
 
 // 環境変数バリデーション関数

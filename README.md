@@ -1,6 +1,6 @@
 # 🛡️ FairGuard Bot
 
-[![Node.js](https://img.shields.io/badge/Node.js-v18+-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-v22+-green.svg)](https://nodejs.org/)
 [![Discord.js](https://img.shields.io/badge/Discord.js-v14-blue.svg)](https://discord.js.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -126,7 +126,7 @@ Google Gemini APIを活用した、公平で洗練されたコミュニティ運
 
 ### 前提条件
 
-- **Node.js v18以上**が必要です
+- **Node.js v22以上 (LTS)** が必要です
 - **Discord Bot アカウント**が必要です
 - **Google Gemini API キー**が必要です
 
@@ -254,6 +254,13 @@ GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 # "free": 無料枠向けの基本機能のみ（デフォルト）
 # "full": 全機能有効（AI API使用量が増加します）
 AI_MODE="free"
+
+# === 機密情報暗号化（必須） ===
+# DBに保存する機密データを暗号化する32バイトHEXキー（例: openssl rand -hex 32）
+ENCRYPTION_KEY="YOUR_32_BYTE_HEX_ENCRYPTION_KEY_HERE"
+# KMS/シークレットマネージャー経由で取得する場合の代替
+# ENCRYPTION_KEY_FILE="/path/to/secret/enc_key"           # 例: ボリュームに配置
+# ENCRYPTION_KEY_COMMAND="./scripts/fetch-key.sh"         # 例: AWS KMS/Azure Key Vault/GCP Secret Manager から取得
 ```
 
 #### 環境変数の取得方法
@@ -352,6 +359,14 @@ pm2 logs fairguard-bot
 # 停止
 pm2 stop fairguard-bot
 ```
+
+### ログの永続化と外部転送
+
+- ログは `logs/combined.log` と `logs/error.log` に自動保存されます（ローテーション上限: 5MB × 5世代）。
+- 外部のログ集約サービスへ転送したい場合は、環境変数を設定してください。
+   - `LOG_WEBHOOK_URL`: 転送先のWebhook/HTTPエンドポイント（例: https://example.com/log-ingest）
+   - `LOG_WEBHOOK_LEVEL`: 転送する最小レベル（例: info, warn, error。デフォルト: warn）
+
 
 ---
 

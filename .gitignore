@@ -21,6 +21,8 @@ test_*.txt
 
 # テスト
 coverage/
+test_output.txt
+test_output_*.txt
 
 # OS/エディタ設定
 .vscode/

@@ -9,6 +9,11 @@ if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir);
 }
 
+// 環境変数でログレベル・外部転送を制御
+const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+const LOG_WEBHOOK_URL = process.env.LOG_WEBHOOK_URL;
+const LOG_WEBHOOK_LEVEL = process.env.LOG_WEBHOOK_LEVEL || 'warn';
+
 // --- カスタムフォーマット: 機密情報のリダクション ---
 const sensitiveKeys = [
     'BOT_TOKEN', 'GEMINI_API_KEY', 'ENCRYPTION_KEY', // Specific API keys
@@ -103,25 +108,44 @@ const consoleFormat = winston.format.combine(
 );
 
 // ロガーの作成
+const transports = [
+    // エラーログファイル
+    new winston.transports.File({
+        filename: path.join(logDir, 'error.log'),
+        level: 'error',
+        maxsize: 5242880, // 5MB
+        maxFiles: 5
+    }),
+    // 全ログファイル
+    new winston.transports.File({
+        filename: path.join(logDir, 'combined.log'),
+        maxsize: 5242880, // 5MB
+        maxFiles: 5
+    })
+];
+
+// 外部ログ転送（例: 外部ログ集約サービスやWebhook）
+if (LOG_WEBHOOK_URL) {
+    try {
+        const url = new URL(LOG_WEBHOOK_URL);
+        transports.push(new winston.transports.Http({
+            level: LOG_WEBHOOK_LEVEL,
+            host: url.hostname,
+            port: url.port || (url.protocol === 'https:' ? 443 : 80),
+            path: `${url.pathname}${url.search}` || '/',
+            ssl: url.protocol === 'https:'
+        }));
+    } catch (error) {
+        // 外部転送設定が不正でもアプリを止めない
+        console.error('外部ログ転送のURLが不正です。LOG_WEBHOOK_URL を確認してください。', error.message);
+    }
+}
+
 const logger = winston.createLogger({
-    level: process.env.LOG_LEVEL || 'info',
+    level: LOG_LEVEL,
     format: logFormat,
     defaultMeta: { service: 'fairguard-bot' },
-    transports: [
-        // エラーログファイル
-        new winston.transports.File({
-            filename: path.join(logDir, 'error.log'),
-            level: 'error',
-            maxsize: 5242880, // 5MB
-            maxFiles: 5
-        }),
-        // 全ログファイル
-        new winston.transports.File({
-            filename: path.join(logDir, 'combined.log'),
-            maxsize: 5242880, // 5MB
-            maxFiles: 5
-        })
-    ],
+    transports,
     // 未処理の例外とリジェクトをキャッチ
     exceptionHandlers: [
         new winston.transports.File({
