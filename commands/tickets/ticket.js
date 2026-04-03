@@ -32,8 +32,13 @@ module.exports = {
 
             await interaction.deferReply();
 
+            const safeUsername = interaction.user.username
+                .replace(/[^\w\u3040-\u30ff\u3400-\u9fff]/g, '-')
+                .replace(/-{2,}/g, '-')
+                .replace(/^-|-$/g, '')
+                .slice(0, 80) || 'user';
             const ch = await interaction.guild.channels.create({
-                name: `ticket-${interaction.user.username}`,
+                name: `ticket-${safeUsername}`,
                 type: ChannelType.GuildText,
                 parent: CONFIG.TICKET_CATEGORY_ID,
                 permissionOverwrites: [

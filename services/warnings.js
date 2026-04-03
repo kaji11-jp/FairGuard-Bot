@@ -40,8 +40,8 @@ const addWarning = (userId, reason = '', moderatorId = '', logId = '') => {
         
         // トランザクションで警告レコードと警告カウントを同時に更新
         const transaction = db.transaction(() => {
-            db.prepare('INSERT INTO warning_records (id, user_id, timestamp, expires_at, reason, moderator_id, log_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
-                .run(warningId, userId, now, expiresAt, reason, moderatorId, logId);
+            db.prepare('INSERT INTO warning_records (id, user_id, timestamp, expires_at, reason, moderator_id, log_id) VALUES (@id, @user_id, @timestamp, @expires_at, @reason, @moderator_id, @log_id)')
+                .run({ id: warningId, user_id: userId, timestamp: now, expires_at: expiresAt, reason, moderator_id: moderatorId, log_id: logId });
             
             const activeCount = db.prepare('SELECT COUNT(*) as count FROM warning_records WHERE user_id = ? AND expires_at >= ?')
                 .get(userId, now)?.count || 0;

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { addRule, removeRule, getRules } = require('../../services/rules');
 const { isAdminUser } = require('../../utils/permissions');
+const logger = require('../../utils/logger');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -41,7 +42,8 @@ module.exports = {
                 addRule(content, interaction.user.tag);
                 return interaction.reply({ content: `✅ ルールを追加しました: "${content}"`, ephemeral: true });
             } catch (e) {
-                return interaction.reply({ content: `❌ エラーが発生しました: ${e.message}`, ephemeral: true });
+                logger.error('ルール追加コマンドエラー', { userId: interaction.user.id, error: e.message });
+                return interaction.reply({ content: '❌ エラーが発生しました。ログを確認してください。', ephemeral: true });
             }
         }
 
@@ -55,7 +57,8 @@ module.exports = {
                     return interaction.reply({ content: `❌ ルールID ${id} が見つかりません`, ephemeral: true });
                 }
             } catch (e) {
-                return interaction.reply({ content: `❌ エラーが発生しました: ${e.message}`, ephemeral: true });
+                logger.error('ルール削除コマンドエラー', { userId: interaction.user.id, ruleId: id, error: e.message });
+                return interaction.reply({ content: '❌ エラーが発生しました。ログを確認してください。', ephemeral: true });
             }
         }
 

@@ -173,10 +173,18 @@ async function handleCommand(message) {
 必ず以下のJSON形式で、日本語で応答してください。英語は一切使用しないでください。
 {"status": "ACCEPTED" or "REJECTED", "reason": "日本語で公平な理由を記述"}
 
-[警告理由]: ${log.reason}
-[ユーザー異議]: ${validatedReason}
-[元発言]: ${log.content}
-[文脈]: ${log.context_data}
+<警告理由>
+${log.reason}
+</警告理由>
+<ユーザー異議>
+${validatedReason}
+</ユーザー異議>
+<元発言>
+${log.content}
+</元発言>
+<文脈>
+${log.context_data}
+</文脈>
         `;
 
         let result;
@@ -233,8 +241,13 @@ async function handleCommand(message) {
                 return message.reply('❌ チケットカテゴリーIDが設定されていません。管理者に連絡してください。');
             }
 
+            const safeUsername = message.author.username
+                .replace(/[^\w\u3040-\u30ff\u3400-\u9fff]/g, '-')
+                .replace(/-{2,}/g, '-')
+                .replace(/^-|-$/g, '')
+                .slice(0, 80) || 'user';
             const ch = await message.guild.channels.create({
-                name: `ticket-${message.author.username}`,
+                name: `ticket-${safeUsername}`,
                 type: ChannelType.GuildText,
                 parent: CONFIG.TICKET_CATEGORY_ID,
                 permissionOverwrites: [

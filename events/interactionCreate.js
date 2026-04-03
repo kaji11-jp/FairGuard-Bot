@@ -3,6 +3,7 @@ const logger = require('../utils/logger');
 const { handleConfirmation } = require('../services/aiConfirmation');
 const { pendingWarnsCache } = require('../utils/cache');
 const { isAdminUser } = require('../utils/permissions');
+const { checkRateLimit } = require('../utils/rateLimit');
 const { executeManualWarn } = require('../handlers/commands'); // ※後で移行が必要だが一旦既存を利用
 const { removeOpenTicket } = require('../utils/tickets');
 const db = require('../database');
@@ -13,6 +14,10 @@ module.exports = {
     async execute(interaction) {
         // --- スラッシュコマンド処理 ---
         if (interaction.isChatInputCommand()) {
+            if (!isAdminUser(interaction.member) && !checkRateLimit(interaction.user.id)) {
+                return interaction.reply({ content: '⏱️ コマンドの実行頻度が高すぎます。しばらく待ってから再試行してください。', ephemeral: true });
+            }
+
             const command = interaction.client.commands.get(interaction.commandName);
 
             if (!command) {
@@ -48,11 +53,17 @@ module.exports = {
         try {
             // AI確認フロー
             if (interaction.customId.startsWith('ai_confirm_')) {
+                if (!isAdminUser(interaction.member)) {
+                    return interaction.reply({ content: '❌ この操作は管理者専用です', ephemeral: true });
+                }
                 const confirmationId = interaction.customId.replace('ai_confirm_', '');
                 return handleConfirmation(interaction, confirmationId, true);
             }
 
             if (interaction.customId.startsWith('ai_reject_')) {
+                if (!isAdminUser(interaction.member)) {
+                    return interaction.reply({ content: '❌ この操作は管理者専用です', ephemeral: true });
+                }
                 const confirmationId = interaction.customId.replace('ai_reject_', '');
                 return handleConfirmation(interaction, confirmationId, false);
             }
@@ -88,33 +99,18 @@ module.exports = {
                     return interaction.reply({ content: '❌ あなたにはこの操作を実行する権限がありません', ephemeral: true });
                 }
 
+                // 競合状態防止: 最初の await より前に同期的に削除する。
+                // Node.js はシングルスレッドなので、ここまで同期的に到達できるのは1つのハンドラのみ。
+                // 2つ目以降のハンドラは get() で undefined を取得し、上のチェックで弾かれる。
+                pendingWarnsCache.delete(interaction.message.id);
+
                 try {
                     const target = await interaction.guild.members.fetch(warnData.targetId).catch(() => null);
                     if (!target) {
                         return interaction.reply({ content: '❌ 対象ユーザーが見つかりません', ephemeral: true });
                     }
 
-                    // executeManualWarnは handlers/commands.js に依存しているが、
-                    // これ自体もリファクタリング対象。一旦は既存をrequireして動かすが、
-                    // 最終的には Utils か Service に移動すべき。
-                    // 現状は handlers/commands.js がまだ存在している前提。
-                    // messageCreate も移植しないとハンドラが空になるため、
-                    // executeManualWarn を独立させるのがベスト。
-
-                    // const { executeManualWarn } = require('../handlers/commands'); 
-                    // ↑ 循環参照やファイル削除に注意。
-
-                    // とりあえず今回は handlers/commands.js にある executeManualWarn を使う想定だが、
-                    // ファイルを消すならこのロジックも移動が必要。
-
-                    // 暫定対応: もし handlers/commands.js が消えるなら、
-                    // ここにロジックを持ってくるか helper に移す。
-                    // 今回はまだ handlers/commands.js を完全に消していないためrequire可能と仮定するが、
-                    // replace_file_content で index.js から参照を消しただけなのでファイルは残っている。
-
                     await executeManualWarn(interaction.message, target.user, warnData.reason, warnData.content, warnData.context, warnData.messageId, warnData.moderatorId);
-
-                    pendingWarnsCache.delete(interaction.message.id);
 
                     await interaction.update({ content: '✅ 警告を実行しました', components: [], embeds: [] });
                 } catch (error) {

@@ -59,9 +59,11 @@ async function checkSpamAndLongMessage(message, client) {
 必ず以下のJSON形式で、日本語で応答してください。英語は一切使用しないでください。
 {"verdict": "PUNISH" or "SAFE", "reason": "日本語で短い理由を記述", "type": "LONG_MESSAGE" or "SPAM" or "BOTH"}
 
-[対象発言]: ${message.content}
 [文字数]: ${messageLength}文字
 [過去10秒以内のメッセージ数]: ${recentMessages.count}件
+<対象発言>
+${message.content}
+</対象発言>
         `;
 
         let result;
@@ -259,8 +261,12 @@ ${ruleSection}
 必ず以下のJSON形式で、日本語で応答してください。英語は一切使用しないでください。
 {"verdict": "SAFE" or "UNSAFE", "reason": "日本語で短い理由を記述（違反したルールがあれば言及してください）"}
 
-[文脈]: ${context}
-[対象発言]: ${message.content}
+<文脈>
+${context}
+</文脈>
+<対象発言>
+${message.content}
+</対象発言>
         `;
 
         let result;

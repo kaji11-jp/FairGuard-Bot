@@ -1,3 +1,6 @@
+const logger = require('../utils/logger');
+const configManager = require('./configManager');
+
 // 以前に警告ログを出したかどうかのフラグ
 let nonGeminiWarningLogged = false;
 
@@ -306,8 +309,6 @@ async function callAI(prompt) {
 async function checkWarnAbuse(moderatorId, targetId, reason, context, content) {
     const db = require('../database');
     const CONFIG = require('../config');
-    const configManager = require('./configManager');
-    const logger = require('../utils/logger');
     const oneHourAgo = Date.now() - (60 * 60 * 1000);
     const recentWarns = db.prepare(`
         SELECT COUNT(*) as count, MAX(timestamp) as last_warn 
@@ -341,11 +342,17 @@ async function checkWarnAbuse(moderatorId, targetId, reason, context, content) {
 
 ${frequencyWarning}
 
-[警告理由]: ${reason}
 [対象ユーザー]: ${targetId}
 [警告者]: ${moderatorId}
-[対象発言]: ${content}
-[文脈]: ${context}
+<警告理由>
+${reason}
+</警告理由>
+<対象発言>
+${content}
+</対象発言>
+<文脈>
+${context}
+</文脈>
     `;
 
     return await callGemini(prompt);

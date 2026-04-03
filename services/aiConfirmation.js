@@ -16,8 +16,17 @@ async function requestAIConfirmation(message, aiResult, context, word) {
     try {
         db.prepare(`
             INSERT INTO ai_confirmations (id, message_id, user_id, moderator_id, status, timestamp, ai_analysis, context_data)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(confirmationId, message.id, message.author.id, 'AI', 'pending', Date.now(), JSON.stringify(aiResult), context);
+            VALUES (@id, @message_id, @user_id, @moderator_id, @status, @timestamp, @ai_analysis, @context_data)
+        `).run({
+            id: confirmationId,
+            message_id: message.id,
+            user_id: message.author.id,
+            moderator_id: 'AI',
+            status: 'pending',
+            timestamp: Date.now(),
+            ai_analysis: JSON.stringify(aiResult),
+            context_data: context
+        });
     } catch (error) {
         logger.error('AI確認リクエスト保存エラー', {
             confirmationId,
